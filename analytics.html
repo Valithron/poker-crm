@@ -13,38 +13,6 @@
       padding: 0;
     }
 
-    header.navbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #333;
-      color: white;
-      padding: 0.75rem 1rem;
-    }
-
-    .nav-brand {
-      font-weight: bold;
-      font-size: 1.2rem;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-
-    .nav-item {
-      color: white;
-      text-decoration: none;
-      font-size: 1rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-    }
-
-    .nav-item:hover {
-      background-color: #666;
-    }
-
     .content {
       max-width: 800px;
       margin: 2rem auto;
@@ -96,7 +64,9 @@
       <a href="createEvent.html" class="nav-item">📅 Create Event</a>
       <a href="players_list.html" class="nav-item">📇 View Players</a>
       <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
+      <a href="analytics.html" class="nav-item">📊 Analytics</a>
     </nav>
+    <button class="hamburger" id="hamburgerBtn">☰</button>
   </header>
 
   <div class="content">
@@ -184,6 +154,13 @@
     }
 
     buildAnalytics();
+  </script>
+    <script>
+  const hamburger = document.getElementById("hamburgerBtn");
+  const navLinks = document.getElementById("navLinks");
+  hamburger?.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
   </script>
 </body>
 </html>
