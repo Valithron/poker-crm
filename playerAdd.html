@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>BroTime CRM - Add Player</title>
+  <style>
+  /* Use the same CSS from viewEvents.html */
+  body {
+    font-family: Arial, sans-serif;
+    padding: 1rem;
+    margin: 0;
+    background-color: #f5f5f5;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  form {
+    max-width: 400px;
+    margin: auto;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #555;
+  }
+
+  @media (max-width: 600px) {
+    h1 {
+      font-size: 1.25rem;
+    }
+
+    form {
+      padding: 0.75rem;
+    }
+
+    input,
+    select,
+    button {
+      font-size: 1rem;
+      padding: 0.6rem;
+    }
+  }
+  /* Nav Structure */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.nav-brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--button-text);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-links .nav-item {
+  color: var(--button-text);
+  text-decoration: none;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nav-links .nav-item:hover {
+  background-color: #666;
+}
+
+.hamburger {
+  display: none;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--button-text);
+  cursor: pointer;
+}
+
+/* Mobile Menu Toggle */
+@media (max-width: 600px) {
+  .nav-links {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    background-color: var(--button-bg);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: none;
+  }
+
+  .nav-links.show {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+}
+
+</style>
+
+</head>
+<body>
+  <header class="navbar">
+  <div class="nav-brand">🃏 BroTime CRM</div>
+  <nav class="nav-links" id="navLinks">
+    <a href="index.html" class="nav-item">🏠 Home</a>
+    <a href="addPlayer.html" class="nav-item">➕ Add Player</a>
+    <a href="createEvent.html" class="nav-item">📅 Create Event</a>
+    <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
+    <a href="analytics.html" class="nav-item">📊 Analytics</a>
+
+    
+  </nav>
+  <button class="hamburger" id="hamburgerBtn">☰</button>
+</header>
+
+  <h1>Add a New Player</h1>
+  <form id="playerForm">
+    <input type="text" id="name" placeholder="Full Name" required><br>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="tel" id="phone" placeholder="Phone"><br>
+    <select id="role" required>
+      <option value="">Select Role</option>
+      <option value="core">Core</option>
+      <option value="regular">Regular</option>
+      <option value="guest">Guest</option>
+    </select><br>
+    <input type="text" id="invitedBy" placeholder="Invited By"><br>
+    <button type="submit">Add Player</button>
+  </form>
+
+  <script type="module">
+    // Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+  apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+  authDomain: "poker-crm.firebaseapp.com",
+  projectId: "poker-crm",
+  storageBucket: "poker-crm.appspot.com",
+  messagingSenderId: "218784808902",
+  appId: "1:218784808902:web:c587bdf584d704f7733107"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("playerForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const role = document.getElementById("role").value;
+      const invitedBy = document.getElementById("invitedBy").value.trim();
+
+      try {
+        await addDoc(collection(db, "players"), {
+          name,
+          email,
+          phone,
+          role,
+          invitedBy,
+          attendance: [] // Start with empty array
+        });
+        alert("Player added!");
+        form.reset();
+      } catch (error) {
+        console.error("Error adding document: ", error);
+        alert("Something went wrong.");
+      }
+    });
+  </script>
+  <script>
+  const hamburger = document.getElementById("hamburgerBtn");
+  const navLinks = document.getElementById("navLinks");
+  hamburger?.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+</script>
+
+
+</body>
+</html>

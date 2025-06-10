@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>View Events</title>
+  <style>body {
+  font-family: Arial, sans-serif;
+  padding: 1rem;
+  margin: 0;
+  background-color: #f5f5f5;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.event {
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 0 auto 2rem;
+  max-width: 600px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.event h2 {
+  font-size: 1.1rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.attendees {
+  margin-top: 1rem;
+}
+
+ul {
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+
+select {
+  font-size: 1rem;
+  padding: 0.4rem;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 0.5rem;
+}
+
+button {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #333;
+  color: white;
+  cursor: pointer;
+  max-width: 300px;
+  width: auto;
+}
+
+button.unmark {
+  background-color: #d9534f;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  margin-left: 0.5rem;
+}
+
+button:hover {
+  background-color: #555;
+}
+
+button.unmark:hover {
+  background-color: #c9302c;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.25rem;
+  }
+
+  .event {
+    padding: 0.75rem;
+  }
+
+  select,
+  button {
+    font-size: 1rem;
+    padding: 0.6rem;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0.5rem;
+    margin-left: 0;
+  }
+
+  .attendees ul {
+    padding-left: 1rem;
+  }
+
+  button.unmark {
+    font-size: 0.85rem;
+    display: inline-block;
+    margin-top: 0.4rem;
+  }
+}
+/* Nav Structure */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.nav-brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--button-text);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-links .nav-item {
+  color: var(--button-text);
+  text-decoration: none;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nav-links .nav-item:hover {
+  background-color: #666;
+}
+
+.hamburger {
+  display: none;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--button-text);
+  cursor: pointer;
+}
+
+/* Mobile Menu Toggle */
+@media (max-width: 600px) {
+  .nav-links {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    background-color: var(--button-bg);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: none;
+  }
+
+  .nav-links.show {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+}
+
+</style>
+
+</head>
+<body>
+  <header class="navbar">
+  <div class="nav-brand">🃏 BroTime CRM</div>
+  <nav class="nav-links" id="navLinks">
+    <a href="index.html" class="nav-item">🏠 Home</a>
+    <a href="addPlayer.html" class="nav-item">➕ Add Player</a>
+    <a href="createEvent.html" class="nav-item">📅 Create Event</a>
+    <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
+    <a href="analytics.html" class="nav-item">📊 Analytics</a>
+
+    
+  </nav>
+  <button class="hamburger" id="hamburgerBtn">☰</button>
+</header>
+
+  <h1>🗓️ Poker Night Events</h1>
+  <div id="eventList"></div>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    getDoc,
+    updateDoc,
+    doc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+    authDomain: "poker-crm.firebaseapp.com",
+    projectId: "poker-crm",
+    storageBucket: "poker-crm.appspot.com",
+    messagingSenderId: "218784808902",
+    appId: "1:218784808902:web:c587bdf584d704f7733107"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const eventList = document.getElementById("eventList");
+
+  async function fetchPlayerNames(refs) {
+    const names = [];
+    for (const ref of refs || []) {
+      try {
+        const snap = await getDoc(ref);
+        names.push(snap.exists() ? snap.data().name : "[Unknown]");
+      } catch {
+        names.push("[Error]");
+      }
+    }
+    return names;
+  }
+
+  async function fetchEvents() {
+    const snapshot = await getDocs(collection(db, "events"));
+    const events = [];
+
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+
+      // Handle both old "attendees" and new "invited"
+      const invitedRefs = data.invited || data.attendees || [];
+      const attendedRefs = data.attended || [];
+
+      const invited = await fetchPlayerNames(invitedRefs);
+      const attended = await fetchPlayerNames(attendedRefs);
+
+      events.push({
+  id: docSnap.id,  // ✅ Needed for updating this event later
+  date: data.date?.toDate().toLocaleString() || "[No date]",
+  notes: data.notes || "",
+  invited,
+  attended
+});
+
+    }
+
+    renderEvents(events);
+  }
+
+  function renderEvents(events) {
+    eventList.innerHTML = "";
+
+    if (events.length === 0) {
+      eventList.textContent = "No events found.";
+      return;
+    }
+
+    events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    for (const event of events) {
+      const div = document.createElement("div");
+      div.className = "event";
+
+      const attendedListHtml = event.attended.map(name => `
+  <li>
+    ${name}
+    <button data-name="${name}" class="unmark" style="margin-left: 10px; font-size: 0.8rem;">
+      ⛔ Unmark
+    </button>
+  </li>
+`).join("");
+
+div.innerHTML = `
+  <h2>${event.date}</h2>
+  <p><strong>Notes:</strong> ${event.notes || "—"}</p>
+
+  <div class="attendees">
+    <strong>Invited:</strong>
+    <ul>${event.invited.map(name => `<li>${name}</li>`).join("")}</ul>
+  </div>
+
+  <div class="attendees">
+    <strong>Attended:</strong>
+    <ul id="attended-list-${event.id}">
+      ${attendedListHtml || `<li><em>None marked yet</em></li>`}
+    </ul>
+  </div>
+`;
+
+
+      // Build dropdown
+      const dropdown = document.createElement("select");
+      dropdown.innerHTML = `<option value="">Select attendee...</option>`;
+      for (let i = 0; i < event.invited.length; i++) {
+        const name = event.invited[i];
+        if (!event.attended.includes(name)) {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          dropdown.appendChild(option);
+        }
+      }
+
+      const markBtn = document.createElement("button");
+      markBtn.textContent = "✔️ Mark as Attended";
+      markBtn.style.marginLeft = "1rem";
+
+      const controls = document.createElement("div");
+      controls.style.marginTop = "1rem";
+      controls.appendChild(dropdown);
+      controls.appendChild(markBtn);
+
+      div.appendChild(controls);
+
+      markBtn.addEventListener("click", async () => {
+  const selectedName = dropdown.value;
+  if (!selectedName) return alert("Please select someone to mark.");
+
+  // Find the player by name
+  const playersSnap = await getDocs(collection(db, "players"));
+  let matchedDoc = null;
+  playersSnap.forEach(docSnap => {
+    const data = docSnap.data();
+    if (data.name === selectedName) {
+      matchedDoc = docSnap;
+    }
+  });
+
+  if (!matchedDoc) {
+    alert("Player not found.");
+    return;
+  }
+
+  const playerRef = doc(db, "players", matchedDoc.id);
+  const eventRef = doc(db, "events", event.id); // event.id now required!
+
+  // Update event document: add player to attended
+  const eventSnap = await getDoc(eventRef);
+  const currentAttended = eventSnap.data().attended || [];
+  const updatedAttended = [...currentAttended, playerRef];
+  await updateDoc(eventRef, { attended: updatedAttended });
+
+  // Update player document: add event date to attendance array
+  const playerData = matchedDoc.data();
+  const currentDates = playerData.attendance || [];
+  const parsedDate = new Date(event.date);
+  const updatedDates = [...currentDates, parsedDate];
+  await updateDoc(playerRef, { attendance: updatedDates });
+
+  // ✅ Visual Update (no reload!)
+  const ul = div.querySelector(`#attended-list-${event.id}`);
+  const li = document.createElement("li");
+  li.textContent = selectedName;
+  ul.appendChild(li);
+
+  // Remove from dropdown
+  dropdown.querySelector(`option[value="${selectedName}"]`)?.remove();
+
+  // Reset dropdown
+  dropdown.value = "";
+
+  // Optional feedback
+  markBtn.textContent = "✅ Marked!";
+  markBtn.disabled = true;
+  setTimeout(() => {
+    markBtn.textContent = "✔️ Mark as Attended";
+    markBtn.disabled = false;
+  }, 1200);
+});
+// Attach unmark button listeners
+div.querySelectorAll(".unmark").forEach(button => {
+  button.addEventListener("click", async () => {
+    const nameToRemove = button.dataset.name;
+    if (!confirm(`Unmark ${nameToRemove} from attended?`)) return;
+
+    // Lookup player doc by name
+    const playersSnap = await getDocs(collection(db, "players"));
+    let matchedDoc = null;
+    playersSnap.forEach(docSnap => {
+      if (docSnap.data().name === nameToRemove) {
+        matchedDoc = docSnap;
+      }
+    });
+
+    if (!matchedDoc) {
+      alert("Player not found.");
+      return;
+    }
+
+    const playerRef = doc(db, "players", matchedDoc.id);
+    const eventRef = doc(db, "events", event.id); // event.id is available from earlier
+
+    // Remove player from event.attended
+    const eventSnap = await getDoc(eventRef);
+    const currentRefs = eventSnap.data().attended || [];
+    const updatedRefs = currentRefs.filter(ref => ref.path !== playerRef.path);
+    await updateDoc(eventRef, { attended: updatedRefs });
+
+    // Remove event date from player.attendance array
+    const playerSnap = await getDoc(playerRef);
+    const currentDates = playerSnap.data().attendance || [];
+
+    const eventDate = new Date(event.date);
+    const updatedDates = currentDates.filter(date => {
+      const timestamp = date.seconds ? new Date(date.seconds * 1000) : new Date(date);
+      return timestamp.getTime() !== eventDate.getTime();
+    });
+
+    await updateDoc(playerRef, { attendance: updatedDates });
+
+    // ✅ Update UI
+    button.closest("li")?.remove();
+
+    alert(`${nameToRemove} has been unmarked.`);
+  });
+});
+
+      eventList.appendChild(div);
+
+      // Attach unmark button listeners
+div.querySelectorAll(".unmark").forEach(button => {
+  button.addEventListener("click", async () => {
+    const nameToRemove = button.dataset.name;
+    if (!confirm(`Unmark ${nameToRemove} from attended?`)) return;
+
+    // Lookup player ref
+    const playerSnap = await getDocs(collection(db, "players"));
+    let matched = null;
+    playerSnap.forEach(docSnap => {
+      if (docSnap.data().name === nameToRemove) matched = docSnap;
+    });
+
+    if (!matched) return alert("Player not found.");
+
+    const playerRef = doc(db, "players", matched.id);
+    const eventRef = doc(db, "events", docSnap.id); // may need to pass docSnap.id from earlier!
+
+    // 1. Remove from event.attended
+    const eventSnapshot = await getDoc(eventRef);
+    const currentRefs = eventSnapshot.data().attended || [];
+    const updatedRefs = currentRefs.filter(ref => ref.path !== playerRef.path);
+    await updateDoc(eventRef, { attended: updatedRefs });
+
+    // 2. Remove date from player's attendance array
+    const playerData = matched.data();
+    const eventDate = new Date(event.date);
+    const currentDates = playerData.attendance || [];
+    const filteredDates = currentDates.filter(d =>
+      new Date(d.seconds * 1000).getTime() !== eventDate.getTime()
+    );
+    await updateDoc(playerRef, { attendance: filteredDates });
+
+    alert(`${nameToRemove} has been unmarked.`);
+    location.reload();
+  });
+});
+
+    }
+  }
+
+  fetchEvents();
+</script>
+
+<script>
+  const hamburger = document.getElementById("hamburgerBtn");
+  const navLinks = document.getElementById("navLinks");
+  hamburger?.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+</script>
+
+</body>
+</html>
