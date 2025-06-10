@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Players List</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .player {
+      border-bottom: 1px solid #ccc;
+      padding: 0.75rem 0;
+    }
+
+    .player:last-child {
+      border-bottom: none;
+    }
+
+    .player strong {
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .player span {
+      display: block;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-brand">🃏 BroTime CRM</div>
+    <nav class="nav-links" id="navLinks">
+      <a href="index.html" class="nav-item">🏠 Home</a>
+      <a href="playerAdd.html" class="nav-item">➕ Add Player</a>
+      <a href="createEvent.html" class="nav-item">📅 Create Event</a>
+      <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
+      <a href="analytics.html" class="nav-item">📊 Analytics</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h1>📇 Player Directory</h1>
+    <div id="playerList"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+      authDomain: "poker-crm.firebaseapp.com",
+      projectId: "poker-crm",
+      storageBucket: "poker-crm.appspot.com",
+      messagingSenderId: "218784808902",
+      appId: "1:218784808902:web:c587bdf584d704f7733107"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function renderPlayers() {
+      const snapshot = await getDocs(collection(db, "players"));
+      const list = document.getElementById("playerList");
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "player";
+        div.innerHTML = `
+          <strong>${data.name}</strong>
+          <span>📧 ${data.email || "No email provided"}</span>
+          <span>📞 ${data.phone || "No phone"}</span>
+          <span>🏷️ ${data.role || "Unassigned"}</span>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    renderPlayers();
+  </script>
+</body>
+</html>
