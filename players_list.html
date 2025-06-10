@@ -59,7 +59,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
@@ -74,7 +74,8 @@
     const db = getFirestore(app);
 
     async function renderPlayers() {
-      const snapshot = await getDocs(collection(db, "players"));
+      const q = query(collection(db, "players"), orderBy("name"));
+      const snapshot = await getDocs(q);
       const list = document.getElementById("playerList");
 
       snapshot.forEach(doc => {
