@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Poker Night</title>
+  <style>
+  /* Use the same CSS from viewEvents.html */
+  body {
+    font-family: Arial, sans-serif;
+    padding: 1rem;
+    margin: 0;
+    background-color: #f5f5f5;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  form {
+    max-width: 400px;
+    margin: auto;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: bold;
+  }
+
+  input,
+  select {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin-top: 0.25rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 0.75rem;
+    font-size: 1rem;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: #555;
+  }
+
+  @media (max-width: 600px) {
+    h1 {
+      font-size: 1.25rem;
+    }
+
+    form {
+      padding: 0.75rem;
+    }
+
+    input,
+    select,
+    button {
+      font-size: 1rem;
+      padding: 0.6rem;
+    }
+  }
+  /* Nav Structure */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #444;
+}
+
+.nav-brand {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--button-text);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-links .nav-item {
+  color: var(--button-text);
+  text-decoration: none;
+  font-size: 1rem;
+  background: none;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.nav-links .nav-item:hover {
+  background-color: #666;
+}
+
+.hamburger {
+  display: none;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--button-text);
+  cursor: pointer;
+}
+
+/* Mobile Menu Toggle */
+@media (max-width: 600px) {
+  .nav-links {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    background-color: var(--button-bg);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    display: none;
+  }
+
+  .nav-links.show {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+}
+
+</style>
+
+</head>
+<body>
+  <header class="navbar">
+  <div class="nav-brand">🃏 BroTime CRM</div>
+  <nav class="nav-links" id="navLinks">
+    <a href="index.html" class="nav-item">🏠 Home</a>
+    <a href="addPlayer.html" class="nav-item">➕ Add Player</a>
+    <a href="createEvent.html" class="nav-item">📅 Create Event</a>
+    <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
+    <a href="analytics.html" class="nav-item">📊 Analytics</a>
+
+    
+  </nav>
+  <button class="hamburger" id="hamburgerBtn">☰</button>
+</header>
+
+  <h1>Create New Poker Night Event</h1>
+  <form id="eventForm">
+    <label for="eventDate">Date:</label>
+    <input type="date" id="eventDate" required><br><br>
+
+    <label for="notes">Notes:</label>
+    <input type="text" id="notes" placeholder="Optional notes..."><br><br>
+
+    <label for="attendees">Select Attendees:</label>
+    <select id="attendees" multiple size="10" required></select><br><br>
+
+    <button type="submit">Create Event</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      doc,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+     const firebaseConfig = {
+  apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+  authDomain: "poker-crm.firebaseapp.com",
+  projectId: "poker-crm",
+  storageBucket: "poker-crm.appspot.com",
+  messagingSenderId: "218784808902",
+  appId: "1:218784808902:web:c587bdf584d704f7733107"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const attendeesSelect = document.getElementById("attendees");
+
+    async function loadPlayers() {
+      const snapshot = await getDocs(collection(db, "players"));
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const option = document.createElement("option");
+        option.value = docSnap.id;
+        option.textContent = `${data.name} (${data.role})`;
+        attendeesSelect.appendChild(option);
+      });
+    }
+
+    loadPlayers();
+
+    const form = document.getElementById("eventForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const dateInput = document.getElementById("eventDate").value;
+      const notes = document.getElementById("notes").value.trim();
+      const selected = [...attendeesSelect.selectedOptions].map(option => 
+        doc(db, "players", option.value)
+      );
+
+      try {
+        await addDoc(collection(db, "events"), {
+  date: Timestamp.fromDate(new Date(dateInput)),
+  invited: selected,
+  attended: [],
+  notes,
+  notified: false
+});
+
+        alert("Event created!");
+        form.reset();
+      } catch (error) {
+        console.error("Error creating event:", error);
+        alert("Something went wrong.");
+      }
+    });
+  </script>
+  <script>
+  const hamburger = document.getElementById("hamburgerBtn");
+  const navLinks = document.getElementById("navLinks");
+  hamburger?.addEventListener("click", () => {
+    navLinks.classList.toggle("show");
+  });
+</script>
+
+
+</body>
+</html>
