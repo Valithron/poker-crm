@@ -25,10 +25,15 @@ body {
   border-bottom: 1px solid #444;
 }
 
-.nav-brand {
+.nav-brand a {
+  color: white;
+  text-decoration: none;
   font-weight: bold;
-  font-size: 1.2rem;
-  color: var(--button-text);
+  font-size: 1.2em;
+}
+
+.nav-brand a:hover {
+  text-decoration: underline;
 }
 
 .nav-links {

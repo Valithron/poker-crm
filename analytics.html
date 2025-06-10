@@ -56,18 +56,8 @@
   </style>
 </head>
 <body>
-  <header class="navbar">
-    <div class="nav-brand">🃏 BroTime CRM</div>
-    <nav class="nav-links" id="navLinks">
-      <a href="index.html" class="nav-item">🏠 Home</a>
-      <a href="playerAdd.html" class="nav-item">➕ Add Player</a>
-      <a href="createEvent.html" class="nav-item">📅 Create Event</a>
-      <a href="players_list.html" class="nav-item">📇 View Players</a>
-      <a href="viewEvents.html" class="nav-item">🃏 View Events</a>
-      <a href="analytics.html" class="nav-item">📊 Analytics</a>
-    </nav>
-    <button class="hamburger" id="hamburgerBtn">☰</button>
-  </header>
+ <div id="navbar-placeholder"></div>
+
 
   <div class="content">
     <h1>📊 Attendance Analytics</h1>
@@ -156,11 +146,18 @@
     buildAnalytics();
   </script>
     <script>
-  const hamburger = document.getElementById("hamburgerBtn");
-  const navLinks = document.getElementById("navLinks");
-  hamburger?.addEventListener("click", () => {
-    navLinks.classList.toggle("show");
-  });
-  </script>
+  fetch('nav.html')
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById('navbar-placeholder').innerHTML = html;
+
+      const hamburger = document.getElementById('hamburgerBtn');
+      const navLinks = document.getElementById('navLinks');
+      hamburger?.addEventListener('click', () => {
+        navLinks.classList.toggle('show');
+      });
+    });
+</script>
+
 </body>
 </html>
