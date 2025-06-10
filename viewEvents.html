@@ -435,43 +435,6 @@ div.querySelectorAll(".unmark").forEach(button => {
 
       eventList.appendChild(div);
 
-      // Attach unmark button listeners
-div.querySelectorAll(".unmark").forEach(button => {
-  button.addEventListener("click", async () => {
-    const nameToRemove = button.dataset.name;
-    if (!confirm(`Unmark ${nameToRemove} from attended?`)) return;
-
-    // Lookup player ref
-    const playerSnap = await getDocs(collection(db, "players"));
-    let matched = null;
-    playerSnap.forEach(docSnap => {
-      if (docSnap.data().name === nameToRemove) matched = docSnap;
-    });
-
-    if (!matched) return alert("Player not found.");
-
-    const playerRef = doc(db, "players", matched.id);
-    const eventRef = doc(db, "events", docSnap.id); // may need to pass docSnap.id from earlier!
-
-    // 1. Remove from event.attended
-    const eventSnapshot = await getDoc(eventRef);
-    const currentRefs = eventSnapshot.data().attended || [];
-    const updatedRefs = currentRefs.filter(ref => ref.path !== playerRef.path);
-    await updateDoc(eventRef, { attended: updatedRefs });
-
-    // 2. Remove date from player's attendance array
-    const playerData = matched.data();
-    const eventDate = new Date(event.date);
-    const currentDates = playerData.attendance || [];
-    const filteredDates = currentDates.filter(d =>
-      new Date(d.seconds * 1000).getTime() !== eventDate.getTime()
-    );
-    await updateDoc(playerRef, { attendance: filteredDates });
-
-    alert(`${nameToRemove} has been unmarked.`);
-    location.reload();
-  });
-});
 
     }
   }
