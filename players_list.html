@@ -26,22 +26,31 @@
       margin-bottom: 1.5rem;
     }
 
-    .player {
-      border-bottom: 1px solid #ccc;
-      padding: 0.75rem 0;
+    .section {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
     }
 
-    .player:last-child {
-      border-bottom: none;
-    }
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
 
-    .player strong {
+    .player-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 0.75rem;
+
+    .player-card strong {
       display: block;
       font-size: 1.1rem;
       margin-bottom: 0.25rem;
     }
 
-    .player span {
+    .player-card span {
       display: block;
       font-size: 0.95rem;
     }
@@ -54,12 +63,17 @@
 
   <div class="container">
     <h1>📇 Player Directory</h1>
-    <div id="playerList"></div>
+     <div id="coreSection" class="section">
+      <div id="corePlayers" class="players-grid"></div>
+    </div>
+    <div id="otherSection" class="section">
+      <div id="otherPlayers" class="players-grid"></div>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
@@ -74,21 +88,31 @@
     const db = getFirestore(app);
 
     async function renderPlayers() {
-      const q = query(collection(db, "players"), orderBy("name"));
-      const snapshot = await getDocs(q);
-      const list = document.getElementById("playerList");
+      const snapshot = await getDocs(collection(db, "players"));
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      const players = [];
+      snapshot.forEach(doc => players.push(doc.data()));
+
+      players.sort((a, b) => a.name.localeCompare(b.name));
+
+      const coreContainer = document.getElementById("corePlayers");
+      const otherContainer = document.getElementById("otherPlayers");
+
+      players.forEach(data => {
         const div = document.createElement("div");
-        div.className = "player";
+        div.className = "player-card";
         div.innerHTML = `
           <strong>${data.name}</strong>
           <span>📧 ${data.email || "No email provided"}</span>
           <span>📞 ${data.phone || "No phone"}</span>
           <span>🏷️ ${data.role || "Unassigned"}</span>
         `;
-        list.appendChild(div);
+        
+        if (data.role === "core") {
+          coreContainer.appendChild(div);
+        } else {
+          otherContainer.appendChild(div);
+        }
       });
     }
 
