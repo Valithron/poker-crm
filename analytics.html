@@ -2,8 +2,66 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Attendance Analytics</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    .content {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .stat {
+      background: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 400px;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.5rem;
+      }
+
+      .stats {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .chart-container {
+        height: 300px;
+      }
+    }
+  </style>
 </head>
 <body>
  <div id="navbar-placeholder"></div>
@@ -29,33 +87,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      getDocs,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-      authDomain: "poker-crm.firebaseapp.com",
-      projectId: "poker-crm",
-      storageBucket: "poker-crm.appspot.com",
-      messagingSenderId: "218784808902",
-      appId: "1:218784808902:web:c587bdf584d704f7733107"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    async function buildAnalytics() {
-      const playersSnap = await getDocs(collection(db, "players"));
-      const eventsSnap = await getDocs(collection(db, "events"));
-
-      const playerAttendanceMap = new Map();
-      let totalAttendanceCount = 0;
-
-      playersSnap.forEach(docSnap => {
-        const data = docSnap.data();
+@@ -59,55 +117,63 @@
         const count = (data.attendance || []).length;
         playerAttendanceMap.set(data.name, count);
         totalAttendanceCount += count;
@@ -81,12 +113,20 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             tooltip: { enabled: true }
           },
           scales: {
-            x: { ticks: { font: { size: 14 } } },
+            x: {
+              ticks: {
+                font: { size: 12 },
+                maxRotation: 45,
+                minRotation: 45,
+                autoSkip: false
+              }
+            },
             y: { beginAtZero: true, ticks: { stepSize: 1 } }
           }
         }
