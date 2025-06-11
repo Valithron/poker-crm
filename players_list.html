@@ -13,7 +13,7 @@
     }
 
     .container {
-      max-width: 800px;
+       max-width: 800px;
       margin: 2rem auto;
       background: #fff;
       border-radius: 10px;
@@ -149,15 +149,14 @@
       form = document.createElement('form');
       form.className = 'edit-form';
       form.innerHTML = `
-        <input name="name" type="text" value="${player.name}" required>
-        <input name="email" type="email" value="${player.email || ''}">
-        <input name="phone" type="tel" value="${player.phone || ''}">
-        <input name="invitedBy" type="text" value="${player.invitedBy || ''}">
+        <input name="name" type="text" value="${player.name}" placeholder="Full Name" required>
+        <input name="email" type="email" value="${player.email || ''}" placeholder="Email">
+        <input name="phone" type="tel" value="${player.phone || ''}" placeholder="Phone">
+        <input name="invitedBy" type="text" value="${player.invitedBy || ''}" placeholder="Invited By">
         ${player.role === 'core' ? '' : `
         <select name="role">
           <option value="regular" ${player.role === 'regular' ? 'selected' : ''}>Regular</option>
           <option value="guest" ${player.role === 'guest' ? 'selected' : ''}>Guest</option>
-          <option value="core" ${player.role === 'core' ? 'selected' : ''}>Core</option>
         </select>`}
         <div class="form-buttons">
           <button type="submit">Save</button>
