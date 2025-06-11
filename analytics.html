@@ -87,53 +87,83 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-@@ -59,55 +117,63 @@
+      getFirestore,
+      collection,
+      getDocs,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+      authDomain: "poker-crm.firebaseapp.com",
+      projectId: "poker-crm",
+      storageBucket: "poker-crm.appspot.com",
+      messagingSenderId: "218784808902",
+      appId: "1:218784808902:web:c587bdf584d704f7733107"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function buildAnalytics() {
+      try {
+        const playersSnap = await getDocs(collection(db, "players"));
+        const eventsSnap = await getDocs(collection(db, "events"));
+
+      const playerAttendanceMap = new Map();
+      let totalAttendanceCount = 0;
+
+      playersSnap.forEach(docSnap => {
+        const data = docSnap.data();
         const count = (data.attendance || []).length;
         playerAttendanceMap.set(data.name, count);
         totalAttendanceCount += count;
       });
 
-      const totalEvents = eventsSnap.size;
-      const averageAttendance = totalEvents > 0 ? Math.round(totalAttendanceCount / totalEvents) : 0;
+        const totalEvents = eventsSnap.size;
+        const averageAttendance = totalEvents > 0 ? Math.round(totalAttendanceCount / totalEvents) : 0;
 
-      document.getElementById("totalEvents").textContent = totalEvents;
-      document.getElementById("averageAttendance").textContent = averageAttendance;
+        document.getElementById("totalEvents").textContent = totalEvents;
+        document.getElementById("averageAttendance").textContent = averageAttendance;
 
-      const sorted = [...playerAttendanceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+        const sorted = [...playerAttendanceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-      const chart = new Chart(document.getElementById("topPlayersChart"), {
-        type: "bar",
-        data: {
-          labels: sorted.map(x => x[0]),
-          datasets: [{
-            label: "Total Attendances",
-            data: sorted.map(x => x[1]),
-            backgroundColor: "#333"
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
+        const chart = new Chart(document.getElementById("topPlayersChart"), {
+          type: "bar",
+          data: {
+            labels: sorted.map(x => x[0]),
+            datasets: [{
+              label: "Total Attendances",
+              data: sorted.map(x => x[1]),
+              backgroundColor: "#333"
+            }]
           },
-          scales: {
-            x: {
-              ticks: {
-                font: { size: 12 },
-                maxRotation: 45,
-                minRotation: 45,
-                autoSkip: false
-              }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: true }
             },
-            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            scales: {
+              x: {
+                ticks: {
+                  font: { size: 12 },
+                  maxRotation: 45,
+                  minRotation: 45,
+                  autoSkip: false
+                }
+              },
+              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
           }
-        }
-      });
+        });
+      } catch (err) {
+        console.error('Failed to load analytics', err);
+      }
     }
 
-    buildAnalytics();
+    window.addEventListener('DOMContentLoaded', buildAnalytics);
   </script>
     <script>
   fetch('nav.html')
