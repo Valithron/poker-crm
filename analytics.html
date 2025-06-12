@@ -107,11 +107,14 @@
         const chart = new Chart(document.getElementById("topPlayersChart"), {
           type: "bar",
           data: {
-           labels: sorted.map(x => x.name),
+            labels: sorted.map(x => x.name),
             datasets: [{
               label: "Total Attendances",
               data: sorted.map(x => x.count),
-              backgroundColor: "#333"
+              backgroundColor: "#f5f5dc",
+              hoverBackgroundColor: "#ffd700",
+              borderColor: "#f5f5dc",
+              borderWidth: 1,
             }]
           },
           options: {
@@ -119,18 +122,37 @@
             maintainAspectRatio: false,
             plugins: {
               legend: { display: false },
-              tooltip: { enabled: true }
+              tooltip: {
+                enabled: true,
+                backgroundColor: "#000000",
+                titleColor: "#90ee90",
+                bodyColor: "#90ee90",
+                displayColors: false
+              }
             },
             scales: {
               x: {
                 ticks: {
+                  color: "#ffffff",
                   font: { size: 12 },
                   maxRotation: 45,
                   minRotation: 45,
                   autoSkip: false
+                },
+                grid: {
+                  color: "#cccccc"
                 }
               },
-              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                  color: "#ffffff"
+                },
+                grid: {
+                  color: "#cccccc"
+                }
+              }
             }
           }
         });
