@@ -97,7 +97,7 @@
     <label for="notes">Notes:</label>
     <input type="text" id="notes" placeholder="Optional notes..."><br><br>
 
-    <label for="invitees">Select Invitees:</label>
+    <label for="invitees">Select Invited:</label>
     <select id="invitees" multiple></select>
     <br>
 
@@ -181,8 +181,8 @@
           <h3>Event on <input type="date" value="${date.toISOString().split('T')[0]}" class="date-input"></h3>
           <label>Host:<input type="text" class="host-input" value="${data.host || ''}"></label><br>
           <label>Notes:<input type="text" class="notes-input" value="${data.notes || ''}"></label><br>
-          <label>Invitees:<select class="invite-select" multiple></select></label><br>
-          <label>Attendees:<select class="attend-select" multiple></select></label><br>
+          <label>Invited:<select class="invite-select" multiple></select></label><br>
+          <label>Attended:<select class="attend-select" multiple></select></label><br>
         `;
 
         const inviteSel = card.querySelector(".invite-select");
@@ -202,6 +202,23 @@
           removeItemButton: true,
           choices: players.map(p => ({ value: p.id, label: p.name, selected: attendedIds.includes(p.id) }))
         });
+
+         function updateAttendChoices(initial = false) {
+          const currentSelected = initial ? attendedIds : attendChoices.getValue(true);
+          const allowed = new Set([
+            ...coreIds,
+            ...inviteChoices.getValue(true),
+            ...currentSelected,
+          ]);
+          const opts = players
+            .filter(p => allowed.has(p.id))
+            .map(p => ({ value: p.id, label: p.name, selected: currentSelected.includes(p.id) }));
+          attendChoices.setChoices(opts, 'value', 'label', true);
+        }
+
+        updateAttendChoices(true);
+        inviteSel.addEventListener('change', () => updateAttendChoices());
+
 
         const saveBtn = document.createElement("button");
         saveBtn.textContent = "Save";
