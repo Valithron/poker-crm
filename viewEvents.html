@@ -144,7 +144,7 @@ button.unmark:hover {
   const db = getFirestore(app);
   const eventList = document.getElementById("eventList");
 
-  async function fetchPlayerNames(refs) {
+   async function fetchPlayerNames(refs) {
       const names = [];
       for (const ref of refs || []) {
         try {

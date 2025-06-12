@@ -4,14 +4,62 @@
   <meta charset="UTF-8" />
   <title>Create Poker Night</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    input,
+    button {
+      padding: 0.5rem;
+    }
+
+    button {
+      background-color: #333;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 1rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="navbar-placeholder"></div>
 
-  <h1>Create New Poker Night Event</h1>
-  <form id="eventForm">
-    <label for="eventDate">Date:</label>
-    <input type="date" id="eventDate" required><br><br>
+  <div class="container">
+    <h1>Create New Poker Night Event</h1>
+    <form id="eventForm">
+      <label for="eventDate">Date:</label>
+      <input type="date" id="eventDate" required><br><br>
 
     <label for="notes">Notes:</label>
     <input type="text" id="notes" placeholder="Optional notes..."><br><br>
@@ -21,7 +69,8 @@
     <br>
 
     <button type="submit">Create Event</button>
-  </form>
+    </form>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
