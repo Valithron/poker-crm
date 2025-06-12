@@ -175,6 +175,7 @@ button.unmark:hover {
       events.push({
   id: docSnap.id,  // ✅ Needed for updating this event later
   date: data.date?.toDate().toLocaleString() || "[No date]",
+  host: data.host || "",
   notes: data.notes || "",
   invited,
   attended
@@ -208,8 +209,12 @@ button.unmark:hover {
   </li>
 `).join("");
 
+const hostHtml = event.host ? `<p><strong>Host:</strong> ${event.host}</p>` : "";
+
+
 div.innerHTML = `
   <h2>${event.date}</h2>
+  ${hostHtml}
   <p><strong>Notes:</strong> ${event.notes || "—"}</p>
 
   <div class="attendees">
