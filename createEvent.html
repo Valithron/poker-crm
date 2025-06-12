@@ -2,8 +2,10 @@
 <html>
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Create Poker Night</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -26,6 +28,14 @@
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+    }
+
+    #invitees {
+      width: 100%;
+    }
+
+    .choices {
+      margin-bottom: 0.5rem;
     }
 
     input,
@@ -65,13 +75,14 @@
     <input type="text" id="notes" placeholder="Optional notes..."><br><br>
 
     <label for="invitees">Select Invitees:</label>
-    <div id="invitees" class="invitees-container"></div>
+    <select id="invitees" multiple></select>
     <br>
 
     <button type="submit">Create Event</button>
     </form>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
@@ -94,25 +105,27 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const inviteesContainer = document.getElementById("invitees");
+    const inviteesSelect = document.getElementById("invitees");
+    let choices;
+    const coreIds = [];
 
     async function loadPlayers() {
       const snapshot = await getDocs(collection(db, "players"));
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        const label = document.createElement("label");
-        label.className = "invitee";
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = docSnap.id;
-        checkbox.addEventListener("change", () => {
-          label.classList.toggle("selected", checkbox.checked);
-        });
-        const span = document.createElement("span");
-        span.textContent = `${data.name} (${data.role})`;
-        label.appendChild(checkbox);
-        label.appendChild(span);
-        inviteesContainer.appendChild(label);
+        if (data.role === "core") {
+          coreIds.push(docSnap.id);
+          return;
+        }
+        const option = document.createElement("option");
+        option.value = docSnap.id;
+        option.textContent = data.name;
+        inviteesSelect.appendChild(option);
+      });
+      choices = new Choices(inviteesSelect, {
+        removeItemButton: true,
+        searchResultLimit: 50,
+        shouldSort: true,
       });
     }
 
@@ -124,17 +137,17 @@
 
       const dateInput = document.getElementById("eventDate").value;
       const notes = document.getElementById("notes").value.trim();
-      const selected = [...inviteesContainer.querySelectorAll('input[type="checkbox"]:checked')]
-        .map(cb => cb.value);
+      const selected = choices ? choices.getValue(true) : [];
+      const invitedIds = Array.from(new Set([...coreIds, ...selected]));
 
       try {
         await addDoc(collection(db, "events"), {
-  date: Timestamp.fromDate(new Date(dateInput)),
-  invited: selected,
-  attended: [],
-  notes,
-  notified: false
-});
+          date: Timestamp.fromDate(new Date(dateInput)),
+          invited: invitedIds,
+          attended: [],
+          notes,
+          notified: false
+        });
 
         alert("Event created!");
         form.reset();

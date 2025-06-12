@@ -1,0 +1,14 @@
+{
+  "name": "poker-crm",
+  "version": "1.0.0",
+  "description": "A BroTime poker night CRM system to keep track of attendees and invites.",
+  "private": true,
+  "scripts": {
+    "start": "firebase serve",
+    "deploy": "firebase deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "firebase-tools": "^12.6.1"
+  }
+}

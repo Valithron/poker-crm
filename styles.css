@@ -66,33 +66,9 @@ body {
   cursor: pointer;
 }
 
-/* Invitee multi-select */
-.invitees-container {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.invitee {
-  display: flex;
-  align-items: center;
-  padding: 0.25rem;
-  border-radius: 4px;
-  cursor: pointer;
+/* Tag style multi-select */
+.choices {
   width: 100%;
-}
-
-.invitee input {
-  margin-right: 0.5rem;
-}
-
-.invitee.selected {
-  background-color: #e6f2ff;
 }
 
 /* Mobile Nav */
