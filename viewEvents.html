@@ -145,17 +145,18 @@ button.unmark:hover {
   const eventList = document.getElementById("eventList");
 
   async function fetchPlayerNames(refs) {
-    const names = [];
-    for (const ref of refs || []) {
-      try {
-        const snap = await getDoc(ref);
-        names.push(snap.exists() ? snap.data().name : "[Unknown]");
-      } catch {
-        names.push("[Error]");
+      const names = [];
+      for (const ref of refs || []) {
+        try {
+          const docRef = typeof ref === 'string' ? doc(db, 'players', ref) : ref;
+          const snap = await getDoc(docRef);
+          names.push(snap.exists() ? snap.data().name : "[Unknown]");
+        } catch {
+          names.push("[Error]");
+        }
       }
+      return names;
     }
-    return names;
-  }
 
   async function fetchEvents() {
     const snapshot = await getDocs(collection(db, "events"));

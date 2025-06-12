@@ -16,8 +16,9 @@
     <label for="notes">Notes:</label>
     <input type="text" id="notes" placeholder="Optional notes..."><br><br>
 
-    <label for="attendees">Select Attendees:</label>
-    <select id="attendees" multiple size="10" required></select><br><br>
+    <label for="invitees">Select Invitees:</label>
+    <div id="invitees" class="invitees-container"></div>
+    <br>
 
     <button type="submit">Create Event</button>
   </form>
@@ -29,7 +30,6 @@
       collection,
       getDocs,
       addDoc,
-      doc,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -45,16 +45,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const attendeesSelect = document.getElementById("attendees");
+    const inviteesContainer = document.getElementById("invitees");
 
     async function loadPlayers() {
       const snapshot = await getDocs(collection(db, "players"));
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        const option = document.createElement("option");
-        option.value = docSnap.id;
-        option.textContent = `${data.name} (${data.role})`;
-        attendeesSelect.appendChild(option);
+        const label = document.createElement("label");
+        label.className = "invitee";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = docSnap.id;
+        checkbox.addEventListener("change", () => {
+          label.classList.toggle("selected", checkbox.checked);
+        });
+        const span = document.createElement("span");
+        span.textContent = `${data.name} (${data.role})`;
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        inviteesContainer.appendChild(label);
       });
     }
 
@@ -66,9 +75,8 @@
 
       const dateInput = document.getElementById("eventDate").value;
       const notes = document.getElementById("notes").value.trim();
-      const selected = [...attendeesSelect.selectedOptions].map(option => 
-        doc(db, "players", option.value)
-      );
+      const selected = [...inviteesContainer.querySelectorAll('input[type="checkbox"]:checked')]
+        .map(cb => cb.value);
 
       try {
         await addDoc(collection(db, "events"), {
