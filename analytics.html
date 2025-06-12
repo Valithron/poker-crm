@@ -34,6 +34,40 @@
       text-align: center;
     }
 
+     #coreSummarySection {
+      margin-bottom: 1rem;
+    }
+
+    .core-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .core-member {
+      background: #fff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .core-member .badge {
+      background: #333;
+      color: #fff;
+      border-radius: 12px;
+      padding: 0 0.4rem;
+      margin-left: 0.35rem;
+      font-size: 0.75rem;
+    }
+
+     .core-member {
+        font-size: 0.85rem;
+      }
+
     .chart-container {
       position: relative;
       width: 100%;
@@ -78,6 +112,11 @@
       </div>
     </div>
 
+      <div id="coreSummarySection">
+      <h2 style="text-align:center; font-size:1.1rem; margin-bottom:0.5rem;">Core Attendance</h2>
+      <div id="coreSummary" class="core-summary"></div>
+    </div>
+
     <div class="chart-container">
       <canvas id="topPlayersChart"></canvas>
     </div>
@@ -110,15 +149,15 @@
         const playersSnap = await getDocs(collection(db, "players"));
         const eventsSnap = await getDocs(collection(db, "events"));
 
-      const playerAttendanceMap = new Map();
-      let totalAttendanceCount = 0;
+        const players = [];
+        let totalAttendanceCount = 0;
 
-      playersSnap.forEach(docSnap => {
-        const data = docSnap.data();
-        const count = (data.attendance || []).length;
-        playerAttendanceMap.set(data.name, count);
-        totalAttendanceCount += count;
-      });
+        playersSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const count = (data.attendance || []).length;
+          players.push({ name: data.name, role: data.role, count });
+          totalAttendanceCount += count;
+        });
 
         const totalEvents = eventsSnap.size;
         const averageAttendance = totalEvents > 0 ? Math.round(totalAttendanceCount / totalEvents) : 0;
@@ -126,15 +165,31 @@
         document.getElementById("totalEvents").textContent = totalEvents;
         document.getElementById("averageAttendance").textContent = averageAttendance;
 
-        const sorted = [...playerAttendanceMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+         const corePlayers = players
+          .filter(p => p.role === 'core')
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+        const coreContainer = document.getElementById('coreSummary');
+        coreContainer.innerHTML = '';
+        corePlayers.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'core-member';
+          div.innerHTML = `<span>${p.name}</span><span class="badge">${p.count}</span>`;
+          coreContainer.appendChild(div);
+        });
+
+        const sorted = players
+          .filter(p => p.role !== 'core')
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
 
         const chart = new Chart(document.getElementById("topPlayersChart"), {
           type: "bar",
           data: {
-            labels: sorted.map(x => x[0]),
+           labels: sorted.map(x => x.name),
             datasets: [{
               label: "Total Attendances",
-              data: sorted.map(x => x[1]),
+              data: sorted.map(x => x.count),
               backgroundColor: "#333"
             }]
           },
