@@ -22,19 +22,18 @@ h1 {
   background-color: #fff;
   border-radius: 10px;
   padding: 1rem;
-  margin: 0 auto 2rem;
+  margin: 0 auto 1rem;
   max-width: 600px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .event h2 {
   font-size: 1.1rem;
-  margin-top: 0;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
 }
 
 .attendees {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 ul {
@@ -42,42 +41,7 @@ ul {
   margin: 0.25rem 0;
 }
 
-select {
-  font-size: 1rem;
-  padding: 0.4rem;
-  width: 100%;
-  max-width: 300px;
-  margin-top: 0.5rem;
-}
 
-button {
-  font-size: 1rem;
-  padding: 0.5rem 1rem;
-  margin-top: 0.5rem;
-  margin-left: 0.5rem;
-  border: none;
-  border-radius: 6px;
-  background-color: #333;
-  color: white;
-  cursor: pointer;
-  max-width: 300px;
-  width: auto;
-}
-
-button.unmark {
-  background-color: #d9534f;
-  font-size: 0.9rem;
-  padding: 0.3rem 0.6rem;
-  margin-left: 0.5rem;
-}
-
-button:hover {
-  background-color: #555;
-}
-
-button.unmark:hover {
-  background-color: #c9302c;
-}
 
 @media (max-width: 600px) {
   h1 {
@@ -87,28 +51,7 @@ button.unmark:hover {
   .event {
     padding: 0.75rem;
   }
-
-  select,
-  button {
-    font-size: 1rem;
-    padding: 0.6rem;
-    width: 100%;
-    max-width: 100%;
-    margin-top: 0.5rem;
-    margin-left: 0;
-  }
-
-  .attendees ul {
-    padding-left: 1rem;
-  }
-
-  button.unmark {
-    font-size: 0.85rem;
-    display: inline-block;
-    margin-top: 0.4rem;
-  }
 }
-
 </style>
 
 </head>
@@ -126,8 +69,9 @@ button.unmark:hover {
     collection,
     getDocs,
     getDoc,
-    updateDoc,
-    doc
+    doc,
+    query,
+    where
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
@@ -144,219 +88,50 @@ button.unmark:hover {
   const db = getFirestore(app);
   const eventList = document.getElementById("eventList");
 
-   async function fetchPlayerNames(refs) {
-      const names = [];
-      for (const ref of refs || []) {
-        try {
-          const docRef = typeof ref === 'string' ? doc(db, 'players', ref) : ref;
-          const snap = await getDoc(docRef);
-          names.push(snap.exists() ? snap.data().name : "[Unknown]");
-        } catch {
-          names.push("[Error]");
+   async function fetchNames(ids) {
+    const names = [];
+    for (const id of ids || []) {
+      try {
+        const ref = typeof id === "string" ? doc(db, "players", id) : id;
+        const snap = await getDoc(ref);
+        names.push(snap.exists() ? snap.data().name : "[Unknown]");
+      } catch {
+        names.push("[Error]");
         }
       }
       return names;
     }
 
-  async function fetchEvents() {
-    const snapshot = await getDocs(collection(db, "events"));
+   async function renderEvents() {
+    const q = query(collection(db, "events"), where("locked", "==", true));
+    const snap = await getDocs(q);
     const events = [];
-
-    for (const docSnap of snapshot.docs) {
-      const data = docSnap.data();
-
-      // Handle both old "attendees" and new "invited"
-      const invitedRefs = data.invited || data.attendees || [];
-      const attendedRefs = data.attended || [];
-
-      const invited = await fetchPlayerNames(invitedRefs);
-      const attended = await fetchPlayerNames(attendedRefs);
+    for (const d of snap.docs) {
+      const data = d.data();
+      const invited = await fetchNames(data.invited || []);
+      const attended = await fetchNames(data.attended || []);
 
       events.push({
-  id: docSnap.id,  // ✅ Needed for updating this event later
-  date: data.date?.toDate().toLocaleString() || "[No date]",
-  host: data.host || "",
-  notes: data.notes || "",
-  invited,
-  attended
-});
+  date: data.date?.toDate().toLocaleDateString() || "",
+        host: data.host || "",
+        notes: data.notes || "",
+        invited,
+        attended
+      });
 
     }
-
-    renderEvents(events);
-  }
-
-  function renderEvents(events) {
+    
     eventList.innerHTML = "";
 
-    if (events.length === 0) {
-      eventList.textContent = "No events found.";
-      return;
-    }
-
-    events.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    for (const event of events) {
-      const div = document.createElement("div");
-      div.className = "event";
-
-      const attendedListHtml = event.attended.map(name => `
-  <li>
-    ${name}
-    <button data-name="${name}" class="unmark" style="margin-left: 10px; font-size: 0.8rem;">
-      ⛔ Unmark
-    </button>
-  </li>
-`).join("");
-
-const hostHtml = event.host ? `<p><strong>Host:</strong> ${event.host}</p>` : "";
-
-
-div.innerHTML = `
-  <h2>${event.date}</h2>
-  ${hostHtml}
-  <p><strong>Notes:</strong> ${event.notes || "—"}</p>
-
-  <div class="attendees">
-    <strong>Invited:</strong>
-    <ul>${event.invited.map(name => `<li>${name}</li>`).join("")}</ul>
-  </div>
-
-  <div class="attendees">
-    <strong>Attended:</strong>
-    <ul id="attended-list-${event.id}">
-      ${attendedListHtml || `<li><em>None marked yet</em></li>`}
-    </ul>
-  </div>
-`;
-
-
-      // Build dropdown
-      const dropdown = document.createElement("select");
-      dropdown.innerHTML = `<option value="">Select attendee...</option>`;
-      for (let i = 0; i < event.invited.length; i++) {
-        const name = event.invited[i];
-        if (!event.attended.includes(name)) {
-          const option = document.createElement("option");
-          option.value = name;
-          option.textContent = name;
-          dropdown.appendChild(option);
-        }
-      }
-
-      const markBtn = document.createElement("button");
-      markBtn.textContent = "✔️ Mark as Attended";
-      markBtn.style.marginLeft = "1rem";
-
-      const controls = document.createElement("div");
-      controls.style.marginTop = "1rem";
-      controls.appendChild(dropdown);
-      controls.appendChild(markBtn);
-
-      div.appendChild(controls);
-
-      markBtn.addEventListener("click", async () => {
-  const selectedName = dropdown.value;
-  if (!selectedName) return alert("Please select someone to mark.");
-
-  // Find the player by name
-  const playersSnap = await getDocs(collection(db, "players"));
-  let matchedDoc = null;
-  playersSnap.forEach(docSnap => {
-    const data = docSnap.data();
-    if (data.name === selectedName) {
-      matchedDoc = docSnap;
-    }
-  });
-
-  if (!matchedDoc) {
-    alert("Player not found.");
-    return;
-  }
-
-  const playerRef = doc(db, "players", matchedDoc.id);
-  const eventRef = doc(db, "events", event.id); // event.id now required!
-
-  // Update event document: add player to attended
-  const eventSnap = await getDoc(eventRef);
-  const currentAttended = eventSnap.data().attended || [];
-  const updatedAttended = [...currentAttended, playerRef];
-  await updateDoc(eventRef, { attended: updatedAttended });
-
-  // Update player document: add event date to attendance array
-  const playerData = matchedDoc.data();
-  const currentDates = playerData.attendance || [];
-  const parsedDate = new Date(event.date);
-  const updatedDates = [...currentDates, parsedDate];
-  await updateDoc(playerRef, { attendance: updatedDates });
-
-  // ✅ Visual Update (no reload!)
-  const ul = div.querySelector(`#attended-list-${event.id}`);
-  const li = document.createElement("li");
-  li.textContent = selectedName;
-  ul.appendChild(li);
-
-  // Remove from dropdown
-  dropdown.querySelector(`option[value="${selectedName}"]`)?.remove();
-
-  // Reset dropdown
-  dropdown.value = "";
-
-  // Optional feedback
-  markBtn.textContent = "✅ Marked!";
-  markBtn.disabled = true;
-  setTimeout(() => {
-    markBtn.textContent = "✔️ Mark as Attended";
-    markBtn.disabled = false;
-  }, 1200);
-});
-// Attach unmark button listeners
-div.querySelectorAll(".unmark").forEach(button => {
-  button.addEventListener("click", async () => {
-    const nameToRemove = button.dataset.name;
-    if (!confirm(`Unmark ${nameToRemove} from attended?`)) return;
-
-    // Lookup player doc by name
-    const playersSnap = await getDocs(collection(db, "players"));
-    let matchedDoc = null;
-    playersSnap.forEach(docSnap => {
-      if (docSnap.data().name === nameToRemove) {
-        matchedDoc = docSnap;
-      }
-    });
-
-    if (!matchedDoc) {
-      alert("Player not found.");
-      return;
-    }
-
-    const playerRef = doc(db, "players", matchedDoc.id);
-    const eventRef = doc(db, "events", event.id); // event.id is available from earlier
-
-    // Remove player from event.attended
-    const eventSnap = await getDoc(eventRef);
-    const currentRefs = eventSnap.data().attended || [];
-    const updatedRefs = currentRefs.filter(ref => ref.path !== playerRef.path);
-    await updateDoc(eventRef, { attended: updatedRefs });
-
-    // Remove event date from player.attendance array
-    const playerSnap = await getDoc(playerRef);
-    const currentDates = playerSnap.data().attendance || [];
-
-    const eventDate = new Date(event.date);
-    const updatedDates = currentDates.filter(date => {
-      const timestamp = date.seconds ? new Date(date.seconds * 1000) : new Date(date);
-      return timestamp.getTime() !== eventDate.getTime();
-    });
-
-    await updateDoc(playerRef, { attendance: updatedDates });
-
-    // ✅ Update UI
-    button.closest("li")?.remove();
-
-    alert(`${nameToRemove} has been unmarked.`);
-  });
-});
+    events.sort((a,b) => new Date(b.date) - new Date(a.date));
+    for (const ev of events) {
+      div.innerHTML = `
+        <h2><strong>${ev.date}</strong></h2>
+        ${ev.host ? `<p><strong>Host:</strong> ${ev.host}</p>` : ""}
+        <p><strong>Notes:</strong> ${ev.notes || "—"}</p>
+        <div class="attendees"><strong>Invited:</strong><ul>${ev.invited.map(n=>`<li>${n}</li>`).join("")}</ul></div>
+        <div class="attendees"><strong>Attended:</strong><ul>${ev.attended.map(n=>`<li>${n}</li>`).join("")}</ul></div>
+      `;
 
       eventList.appendChild(div);
 
@@ -364,7 +139,7 @@ div.querySelectorAll(".unmark").forEach(button => {
     }
   }
 
-  fetchEvents();
+  renderEvents();
 </script>
 
 <script>

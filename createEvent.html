@@ -24,6 +24,24 @@
       text-align: center;
     }
 
+     #liveEvents {
+      max-width: 600px;
+      margin: 1rem auto;
+    }
+
+    .event-card {
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    .event-card h3 {
+      margin-top: 0;
+    }
+
     form {
       display: flex;
       flex-direction: column;
@@ -65,6 +83,8 @@
 <body>
   <div id="navbar-placeholder"></div>
 
+   <div id="liveEvents"></div>
+
   <div class="container">
     <h1>Create New Poker Night Event</h1>
     <form id="eventForm">
@@ -93,6 +113,11 @@
       collection,
       getDocs,
       addDoc,
+      updateDoc,
+      doc,
+      onSnapshot,
+      query,
+      where,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -111,11 +136,13 @@
     const inviteesSelect = document.getElementById("invitees");
     let choices;
     const coreIds = [];
+    let players = [];
 
     async function loadPlayers() {
       const snapshot = await getDocs(collection(db, "players"));
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        players.push({ id: docSnap.id, name: data.name, role: data.role });
         if (data.role === "core") {
           coreIds.push(docSnap.id);
           return;
@@ -134,6 +161,78 @@
 
     loadPlayers();
 
+    const liveContainer = document.getElementById("liveEvents");
+
+    function toId(v) {
+      return typeof v === "string" ? v : v?.id;
+    }
+
+    function renderLiveEvents(docs) {
+      liveContainer.innerHTML = "";
+      docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        const card = document.createElement("div");
+        card.className = "event-card";
+
+        const date = data.date?.toDate ? data.date.toDate() : new Date();
+
+        card.innerHTML = `
+          <h3>Event on <input type="date" value="${date.toISOString().split('T')[0]}" class="date-input"></h3>
+          <label>Host:<input type="text" class="host-input" value="${data.host || ''}"></label><br>
+          <label>Notes:<input type="text" class="notes-input" value="${data.notes || ''}"></label><br>
+          <label>Invitees:<select class="invite-select" multiple></select></label><br>
+          <label>Attendees:<select class="attend-select" multiple></select></label><br>
+        `;
+
+        const inviteSel = card.querySelector(".invite-select");
+        const attendSel = card.querySelector(".attend-select");
+
+        const invitedIds = (data.invited || []).map(toId);
+        const attendedIds = (data.attended || []).map(toId);
+
+        const inviteChoices = new Choices(inviteSel, {
+          removeItemButton: true,
+          choices: players
+            .filter(p => p.role !== "core")
+            .map(p => ({ value: p.id, label: p.name, selected: invitedIds.includes(p.id) }))
+        });
+
+        const attendChoices = new Choices(attendSel, {
+          removeItemButton: true,
+          choices: players.map(p => ({ value: p.id, label: p.name, selected: attendedIds.includes(p.id) }))
+        });
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save";
+        saveBtn.addEventListener("click", async () => {
+          await updateDoc(doc(db, "events", id), {
+            date: Timestamp.fromDate(new Date(card.querySelector(".date-input").value)),
+            host: card.querySelector(".host-input").value.trim(),
+            notes: card.querySelector(".notes-input").value.trim(),
+            invited: Array.from(new Set([...coreIds, ...inviteChoices.getValue(true)])),
+            attended: attendChoices.getValue(true)
+          });
+        });
+
+        const lockBtn = document.createElement("button");
+        lockBtn.textContent = "Lock Event";
+        lockBtn.style.marginLeft = "0.5rem";
+        lockBtn.addEventListener("click", async () => {
+          await updateDoc(doc(db, "events", id), { locked: true });
+        });
+
+        card.appendChild(saveBtn);
+        card.appendChild(lockBtn);
+
+        liveContainer.appendChild(card);
+      });
+    }
+
+    onSnapshot(query(collection(db, "events"), where("locked", "==", false)), (snap) => {
+      renderLiveEvents(snap.docs);
+    });
+
     const form = document.getElementById("eventForm");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -151,10 +250,10 @@
           invited: invitedIds,
           attended: [],
           notes,
+          locked: false,
           notified: false
         });
 
-        alert("Event created!");
         form.reset();
       } catch (error) {
         console.error("Error creating event:", error);
