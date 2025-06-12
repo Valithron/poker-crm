@@ -155,6 +155,12 @@ ul {
       hamburger?.addEventListener('click', () => {
         navLinks.classList.toggle('show');
       });
+      
+      document.addEventListener('click', (e) => {
+        if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+          navLinks.classList.remove('show');
+        }
+      });
     });
 </script>
 
