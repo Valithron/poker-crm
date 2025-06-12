@@ -1,17 +1,16 @@
 :root {
-  --button-bg: #333;
-  --button-text: #fff;
-  --bg: #f5f5f5;
-  --text: #000;
-  --card-bg: #fff;
+  --button-bg: #222;
+  --button-text: #f8f8f8;
+  --bg: #0f4d0f;
+  --text: #f8f8f8;
 }
 
-body {␊
-  background-color: var(--bg);␊
-  color: var(--text);␊
-  font-family: Arial, sans-serif;␊
-  margin: 0;␊
-}␊
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+  margin: 0;
+}
 
 /* Navbar styling */
 .navbar {
@@ -72,6 +71,199 @@ body {␊
 /* Tag style multi-select */
 .choices {
   width: 100%;
+}
+
+/* Input fields */
+input,
+select,
+textarea {
+  background-color: #ffffff;
+  color: #0f4d0f;
+  border: 1px solid #333;
+  padding: 0.4rem;
+  border-radius: 4px;
+}
+
+/* Buttons */
+button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+}
+
+/* General container/card layout */
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #0f4d0f;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 1.5rem;
+}
+
+.section {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.player-card {
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.75rem;
+  position: relative;
+}
+
+.player-card strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.player-card span {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.edit-form {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-form input,
+.edit-form select {
+  padding: 0.4rem;
+}
+
+.edit-form .form-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.event-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.event-card h3 {
+  margin-top: 0;
+}
+
+#liveEvents {
+  max-width: 600px;
+  margin: 1rem auto;
+}
+
+.content {
+  max-width: 800px;
+  margin: auto;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.stat {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+  color: #0f4d0f;
+}
+
+#coreSummarySection {
+  margin-bottom: 1rem;
+}
+
+.core-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.core-member {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #0f4d0f;
+}
+
+.core-member .badge {
+  background: #222;
+  color: #f8f8f8;
+  border-radius: 12px;
+  padding: 0 0.4rem;
+  margin-left: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.event {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 1rem;
+  margin: 0 auto 1rem;
+  max-width: 600px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  color: #0f4d0f;
+}
+
+@media (max-width: 600px) {
+  .container {
+    margin: 1rem;
+  }
+
+  .event {
+    padding: 0.75rem;
+  }
+}
+
+/* Card containers */
+.card {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #0f4d0f;
+  border-radius: 8px;
+  padding: 1em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
 /* Mobile Nav */
