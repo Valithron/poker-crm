@@ -6,13 +6,13 @@
   --card-bg: #fff;
 }
 
-body {
-  background-color: var(--bg);
-  color: var(--text);
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-}
+body {␊
+  background-color: var(--bg);␊
+  color: var(--text);␊
+  font-family: Arial, sans-serif;␊
+  margin: 0;␊
+  padding-top: 60px;
+}␊
 
 /* Navbar styling */
 .navbar {
@@ -23,6 +23,10 @@ body {
   color: var(--button-text);
   padding: 0.75rem 1rem;
   border-bottom: 1px solid #444;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
 }
 
 .nav-brand a {
@@ -92,5 +96,15 @@ body {
 
   .hamburger {
     display: block;
+  }
+}
+
+/* Disable fixed navbar on mobile landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+  .navbar {
+    position: static;
+  }
+  body {
+    padding-top: 0;
   }
 }
