@@ -125,6 +125,8 @@ ul {
 
     events.sort((a,b) => new Date(b.date) - new Date(a.date));
     for (const ev of events) {
+        const div = document.createElement('div');
+      div.className = 'event';
       div.innerHTML = `
         <h2><strong>${ev.date}</strong></h2>
         ${ev.host ? `<p><strong>Host:</strong> ${ev.host}</p>` : ""}
