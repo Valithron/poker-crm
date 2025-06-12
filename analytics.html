@@ -165,7 +165,13 @@
         document.getElementById("totalEvents").textContent = totalEvents;
         document.getElementById("averageAttendance").textContent = averageAttendance;
 
-         const corePlayers = players
+          const nameMap = {
+          "Adam Oliver": "Adam",
+          "Sterling Knight-Pinneo": "Sterling"
+          // add other mappings as needed
+        };
+
+        const corePlayers = players
           .filter(p => p.role === 'core')
           .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
@@ -174,7 +180,8 @@
         corePlayers.forEach(p => {
           const div = document.createElement('div');
           div.className = 'core-member';
-          div.innerHTML = `<span>${p.name}</span><span class="badge">${p.count}</span>`;
+           const displayName = nameMap[p.name] || p.name;
+          div.innerHTML = `<span>${displayName}</span><span class="badge">${p.count}</span>`;
           coreContainer.appendChild(div);
         });
 
