@@ -144,16 +144,20 @@ button {
   align-items: center;
 }
 
-.button-group button {
+.home-button {
   display: block;
   width: 90%;
   margin: 0.5rem auto;
-  background-color: #222;
-  color: white;
-  border: none;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  text-decoration: none;
   padding: 1rem;
   font-size: 1rem;
   border-radius: 6px;
+}
+
+.home-button:hover {
+  background-color: #444;
 }
 
 .section {
@@ -369,9 +373,11 @@ button {
   .suits-row {
     font-size: 1.6rem;
   }
-  .button-group button {
-    font-size: 1rem;
-    width: 100%;
+  .home-button {
+    width: 90%;
+    margin: 10px auto;
+    display: block;
+    text-align: center;
   }
   .home-container {
     margin: 1rem;
