@@ -112,63 +112,54 @@ button {
   background-color: rgba(255, 255, 255, 0.9);
   color: #0f4d0f;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   padding: 1.5rem;
 }
 
 /* Home page specific styling */
 .home-container {
+  background-color: #ecf3ec;
+  padding: 2rem;
+  border-radius: 10px;
   text-align: center;
+  margin: 2rem auto;
+  max-width: 500px;
 }
 
 .suits-row {
-  font-size: 2rem;
-  margin-bottom: 0.25rem;
-  white-space: nowrap;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .home-title {
-  margin: 0.25rem 0 1rem;
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: bold;
-  white-space: nowrap;
-}
-
-.home-title .bro {
-  color: #0f4d0f;
-}
-
-.home-title .crm {
-  color: #222;
+  color: darkgreen;
+  margin-bottom: 1rem;
 }
 
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   align-items: center;
 }
 
-.home-btn {
+.button-group button {
   display: block;
   width: 90%;
-  max-width: 360px;
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  text-decoration: none;
-  padding: 0.6em 1.2em;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.home-btn:hover {
-  filter: brightness(1.1);
+  margin: 0.5rem auto;
+  background-color: #222;
+  color: white;
+  border: none;
+  padding: 1rem;
+  font-size: 1rem;
+  border-radius: 6px;
 }
 
 .section {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   padding: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -249,7 +240,7 @@ button {
   padding: 0.75rem 1rem;
   border-radius: 8px;
   margin: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
   color: #0f4d0f;
 }
@@ -269,7 +260,7 @@ button {
   background-color: #ffffff;
   padding: 0.4rem 0.6rem;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: inline-flex;
   align-items: center;
   font-size: 0.85rem;
@@ -304,7 +295,7 @@ button {
   padding: 1rem;
   margin: 0 auto 1rem;
   max-width: 600px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   color: #0f4d0f;
 }
 
@@ -328,7 +319,7 @@ button {
   color: #0f4d0f;
   border-radius: 8px;
   padding: 1em;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 /* Mobile Nav */
@@ -378,9 +369,13 @@ button {
   .suits-row {
     font-size: 1.6rem;
   }
-  .home-btn {
+  .button-group button {
     font-size: 1rem;
     width: 100%;
+  }
+  .home-container {
+    margin: 1rem;
+    padding: 1.5rem;
   }
   .container {
     margin: 1rem;
