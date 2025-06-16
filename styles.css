@@ -271,7 +271,7 @@ button {
 }
 
 /* Mobile Nav */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .nav-links {
     position: absolute;
     top: 60px; /* height of navbar */
