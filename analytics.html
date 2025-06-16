@@ -85,9 +85,14 @@
           // add other mappings as needed
         };
 
+        const comparator = (a, b) => {
+          if (b.count !== a.count) return b.count - a.count;
+          return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        };
+
         const corePlayers = players
           .filter(p => p.role === 'core')
-          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+          .sort(comparator);
 
         const coreContainer = document.getElementById('coreSummary');
         coreContainer.innerHTML = '';
@@ -101,7 +106,7 @@
 
         const sorted = players
           .filter(p => p.role !== 'core')
-          .sort((a, b) => b.count - a.count)
+          .sort(comparator)
           .slice(0, 10);
 
         const chart = new Chart(document.getElementById("topPlayersChart"), {
