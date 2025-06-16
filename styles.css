@@ -116,6 +116,55 @@ button {
   padding: 1.5rem;
 }
 
+/* Home page specific styling */
+.home-container {
+  text-align: center;
+}
+
+.suits-row {
+  font-size: 2rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+}
+
+.home-title {
+  margin: 0.25rem 0 1rem;
+  font-size: 2rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.home-title .bro {
+  color: #0f4d0f;
+}
+
+.home-title .crm {
+  color: #222;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.home-btn {
+  display: block;
+  width: 90%;
+  max-width: 360px;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  text-decoration: none;
+  padding: 0.6em 1.2em;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.home-btn:hover {
+  filter: brightness(1.1);
+}
+
 .section {
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
@@ -319,5 +368,22 @@ button {
   }
   body {
     padding-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-title {
+    font-size: 1.6rem;
+  }
+  .suits-row {
+    font-size: 1.6rem;
+  }
+  .home-btn {
+    font-size: 1rem;
+    width: 100%;
+  }
+  .container {
+    margin: 1rem;
+    padding: 1rem;
   }
 }
