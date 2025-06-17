@@ -130,10 +130,7 @@ h2,
   border: none;
   color: var(--button-text);
   cursor: pointer;
-  position: absolute;
-  top: 50%;
-  right: 1rem;
-  transform: translateY(-50%);
+  margin-left: auto;
 }
 
 /* Tag style multi-select */
