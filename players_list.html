@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Players List</title>
   <link rel="stylesheet" href="styles.css">
 
@@ -81,10 +81,10 @@
       form = document.createElement('form');
       form.className = 'edit-form';
       form.innerHTML = `
-        <input name="name" type="text" value="${player.name}" placeholder="Full Name" required>
-        <input name="email" type="email" value="${player.email || ''}" placeholder="Email">
-        <input name="phone" type="tel" value="${player.phone || ''}" placeholder="Phone">
-        <input name="invitedBy" type="text" value="${player.invitedBy || ''}" placeholder="Invited By">
+        <input name="name" type="text" value="${player.name}" autocomplete="name" placeholder="Full Name" required>
+        <input name="email" type="email" value="${player.email || ''}" autocomplete="email" placeholder="Email">
+        <input name="phone" type="tel" value="${player.phone || ''}" autocomplete="tel" placeholder="Phone">
+        <input name="invitedBy" type="text" value="${player.invitedBy || ''}" autocomplete="off" placeholder="Invited By">
         ${player.role === 'core' ? '' : `
         <select name="role">
           <option value="regular" ${player.role === 'regular' ? 'selected' : ''}>Regular</option>

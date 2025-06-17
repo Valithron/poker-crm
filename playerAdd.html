@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BroTime CRM - Add Player</title>
   <link rel="stylesheet" href="styles.css">
 
@@ -15,10 +15,10 @@
       <h1 class="page-title">Add a New Player</h1>
     </div>
     <form id="playerForm">
-      <input type="text" id="name" placeholder="Full Name" required><br>
-      <input type="email" id="email" placeholder="Email"><br>
-      <input type="tel" id="phone" placeholder="Phone"><br>
-      <input type="text" id="invitedBy" placeholder="Invited By"><br>
+      <input type="text" id="name" name="name" autocomplete="name" placeholder="Full Name" required><br>
+      <input type="email" id="email" name="email" autocomplete="email" placeholder="Email"><br>
+      <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="Phone"><br>
+      <input type="text" id="invitedBy" name="invitedBy" autocomplete="off" placeholder="Invited By"><br>
       <button type="submit">Add Player</button>
     </form>
   </div>
