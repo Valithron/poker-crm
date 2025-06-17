@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create Poker Night</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -19,16 +19,16 @@
     </div>
     <form id="eventForm">
       <label for="eventDate">Date:</label>
-      <input type="date" id="eventDate" required><br><br>
+      <input type="date" id="eventDate" name="eventDate" autocomplete="off" required><br><br>
 
        <label for="host">Host:</label>
-      <input type="text" id="host" placeholder="Enter host name" required><br><br>
+      <input type="text" id="host" name="host" autocomplete="name" placeholder="Enter host name" required><br><br>
 
     <label for="notes">Notes:</label>
-    <input type="text" id="notes" placeholder="Optional notes..."><br><br>
+    <input type="text" id="notes" name="notes" autocomplete="off" placeholder="Optional notes..."><br><br>
 
     <label for="invitees">Select Invited:</label>
-    <select id="invitees" multiple></select>
+    <select id="invitees" name="invitees" autocomplete="off" multiple></select>
     <br>
 
     <button type="submit">Create Event</button>
@@ -108,11 +108,11 @@
         const date = data.date?.toDate ? data.date.toDate() : new Date();
 
         card.innerHTML = `
-          <h3>Event on <input type="date" value="${date.toISOString().split('T')[0]}" class="date-input"></h3>
-          <label>Host:<input type="text" class="host-input" value="${data.host || ''}"></label><br>
-          <label>Notes:<input type="text" class="notes-input" value="${data.notes || ''}"></label><br>
-          <label>Invited:<select class="invite-select" multiple></select></label><br>
-          <label>Attended:<select class="attend-select" multiple></select></label><br>
+          <h3>Event on <input type="date" value="${date.toISOString().split('T')[0]}" class="date-input" autocomplete="off"></h3>
+          <label>Host:<input type="text" class="host-input" autocomplete="name" value="${data.host || ''}"></label><br>
+          <label>Notes:<input type="text" class="notes-input" autocomplete="off" value="${data.notes || ''}"></label><br>
+          <label>Invited:<select class="invite-select" autocomplete="off" multiple></select></label><br>
+          <label>Attended:<select class="attend-select" autocomplete="off" multiple></select></label><br>
         `;
 
         const inviteSel = card.querySelector(".invite-select");
