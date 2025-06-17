@@ -53,6 +53,10 @@ h2,
   max-width: 100%;
   overflow-x: hidden;
 }
+.page-content {
+  padding-top: 70px;
+  box-sizing: border-box;
+}
 
 /* Navbar styling */
 .navbar {
@@ -356,12 +360,8 @@ button {
 
 /* Mobile Nav */
 @media (max-width: 768px) {
-  body {
-    padding-top: 70px;
-  }
-
   .nav-links {
-    position: absolute;
+    position: fixed;
     top: 60px; /* height of navbar */
     left: 0;
     width: 100%;
@@ -393,7 +393,7 @@ button {
   .navbar {
     position: static;
   }
-  body {
+  .page-content {
     padding-top: 0;
   }
 }
@@ -458,7 +458,7 @@ button {
   }
 
   .nav-links {
-    position: absolute;
+    position: fixed;
     top: 60px;
     left: 0;
     width: 100%;
@@ -471,7 +471,7 @@ button {
 
   .nav-links.show {
     display: flex;
-    position: absolute;
+    position: fixed;
     top: 60px;
     left: 0;
     width: 100%;
