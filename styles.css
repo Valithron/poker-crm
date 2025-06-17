@@ -58,6 +58,10 @@ h2,
   box-sizing: border-box;
 }
 
+.mobile-offset {
+  margin-top: 1rem;
+}
+
 /* Navbar styling */
 .navbar {
   display: flex;
@@ -362,14 +366,14 @@ button {
 @media (max-width: 768px) {
   .nav-links {
     position: fixed;
-    top: 60px; /* height of navbar */
+    top: 0;
     left: 0;
     width: 100%;
     background-color: #333;
-    z-index: 1000;
+    z-index: 1100;
     display: none;
     flex-direction: column;
-    padding: 10px 0;
+    padding: 70px 0 10px; /* account for navbar height */
   }
 
   .nav-links.show {
@@ -388,13 +392,15 @@ button {
   }
 }
 
-/* Disable fixed navbar on mobile landscape */
+/* Ensure layout works in mobile landscape */
 @media (max-width: 768px) and (orientation: landscape) {
   .navbar {
-    position: static;
+    position: fixed;
+    top: 0;
+    width: 100%;
   }
   .page-content {
-    padding-top: 0;
+    padding-top: 70px;
   }
 }
 
@@ -459,11 +465,11 @@ button {
 
   .nav-links {
     position: fixed;
-    top: 60px;
+    top: 0;
     left: 0;
     width: 100%;
     background-color: #111;
-    z-index: 1000;
+    z-index: 1100;
     display: none;
     flex-direction: column;
     align-items: center;
@@ -472,11 +478,11 @@ button {
   .nav-links.show {
     display: flex;
     position: fixed;
-    top: 60px;
+    top: 0;
     left: 0;
     width: 100%;
     background-color: #111;
-    z-index: 1000;
+    z-index: 1100;
   }
 
   .hamburger {
