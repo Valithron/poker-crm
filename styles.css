@@ -1,3 +1,10 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
 :root {
   --button-bg: #222;
   --button-text: #f8f8f8;
@@ -8,8 +15,6 @@
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: Arial, sans-serif;
-  margin: 0;
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -340,20 +345,6 @@ button {
   color: #0f4d0f;
 }
 
-@media (max-width: 600px) {
-  .container {
-    margin: 1rem;
-  }
-
-  .event {
-    padding: 0.75rem;
-  }
-
-  .chart-container {
-    height: 300px;
-  }
-}
-
 /* Card containers */
 .card {
   background-color: rgba(255, 255, 255, 0.9);
@@ -427,46 +418,69 @@ button {
 }
 
 @media (max-width: 600px) {
-  input,
-  button,
-  select,
-  textarea {
-    width: 100%;
-    box-sizing: border-box;
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-
-  .form-container,
-  .card,
-  .nav,
-  .content {
-    width: 100%;
-    padding: 10px;
-  }
-
   h1,
   h2,
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     text-align: center;
-    white-space: normal;
-    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
-  .core-members,
-  .analytics-cards {
+  .container,
+  .form-card,
+  .analytics-header {
+    padding: 1rem;
+    margin: 0.5rem;
+    width: 95vw;
+    box-sizing: border-box;
+  }
+
+  .players-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .event {
+    padding: 0.75rem;
+  }
+
+  .chart-container {
+    height: 300px;
+  }
+
+  .navbar {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
   }
 
   .nav-links {
+    width: 100%;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
   }
 
-  .mobile-only {
+  .nav-links.show {
+    display: flex;
+  }
+
+  .hamburger {
     display: block;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .brand-title {
+    font-size: 1.3rem;
+    white-space: normal;
+    text-align: center;
+    padding: 0.5rem 0;
   }
 }
