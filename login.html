@@ -51,6 +51,12 @@
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
 
+      import { setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      setPersistence(auth, browserLocalPersistence).catch((error) => {
+        console.error("Persistence error:", error);
+      });
+
       document
         .getElementById("loginBtn")
         .addEventListener("click", async () => {
