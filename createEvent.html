@@ -1,233 +1,309 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Create Poker Night</title>
-  <link rel="stylesheet" href="styles.css?v=3">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Poker Night</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+    />
 
-</head>
-<body>
-  <div id="navbar-placeholder"></div>
-<main class="page-content">
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-   <div id="liveEvents"></div>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
-  <div class="container">
-    <div class="page-header mobile-offset">
-      <h1 class="page-title">Create New Poker Night Event</h1>
-    </div>
-    <form id="eventForm">
-      <label for="eventDate">Date:</label>
-      <input type="date" id="eventDate" name="eventDate" autocomplete="off" required><br><br>
+      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
 
-       <label for="host">Host:</label>
-      <input type="text" id="host" name="host" autocomplete="name" placeholder="Enter host name" required><br><br>
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
 
-    <label for="notes">Notes:</label>
-    <input type="text" id="notes" name="notes" autocomplete="off" placeholder="Optional notes..."><br><br>
-
-    <label for="invitees">Select Invited:</label>
-    <select id="invitees" name="invitees" autocomplete="off" multiple></select>
-    <br>
-
-    <button type="submit">Create Event</button>
-    </form>
-  </div>
-</main>
-
-  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      addDoc,
-      updateDoc,
-      doc,
-      onSnapshot,
-      query,
-      where,
-      Timestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-     const firebaseConfig = {
-  apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-  authDomain: "poker-crm.firebaseapp.com",
-  projectId: "poker-crm",
-  storageBucket: "poker-crm.appspot.com",
-  messagingSenderId: "218784808902",
-  appId: "1:218784808902:web:c587bdf584d704f7733107"
-};
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const inviteesSelect = document.getElementById("invitees");
-    let choices;
-    const coreIds = [];
-    let players = [];
-
-    async function loadPlayers() {
-      const snapshot = await getDocs(collection(db, "players"));
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        players.push({ id: docSnap.id, name: data.name, role: data.role });
-        if (data.role === "core") {
-          coreIds.push(docSnap.id);
+      onAuthStateChanged(auth, (user) => {
+        if (user && whitelist.includes(user.email)) {
           return;
         }
-        const option = document.createElement("option");
-        option.value = docSnap.id;
-        option.textContent = data.name;
-        inviteesSelect.appendChild(option);
+        if (user) signOut(auth);
+        window.location.href = "login.html";
       });
-      choices = new Choices(inviteesSelect, {
-        removeItemButton: true,
-        searchResultLimit: 50,
-        shouldSort: true,
-      });
-    }
+    </script>
+  </head>
+  <body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+      <div id="liveEvents"></div>
 
-    loadPlayers();
+      <div class="container">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">Create New Poker Night Event</h1>
+        </div>
+        <form id="eventForm">
+          <label for="eventDate">Date:</label>
+          <input
+            type="date"
+            id="eventDate"
+            name="eventDate"
+            autocomplete="off"
+            required
+          /><br /><br />
 
-    const liveContainer = document.getElementById("liveEvents");
+          <label for="host">Host:</label>
+          <input
+            type="text"
+            id="host"
+            name="host"
+            autocomplete="name"
+            placeholder="Enter host name"
+            required
+          /><br /><br />
 
-    function toId(v) {
-      return typeof v === "string" ? v : v?.id;
-    }
+          <label for="notes">Notes:</label>
+          <input
+            type="text"
+            id="notes"
+            name="notes"
+            autocomplete="off"
+            placeholder="Optional notes..."
+          /><br /><br />
 
-    function renderLiveEvents(docs) {
-      liveContainer.innerHTML = "";
-      docs.forEach((docSnap) => {
-        const data = docSnap.data();
-        const id = docSnap.id;
-        const card = document.createElement("div");
-        card.className = "event-card";
+          <label for="invitees">Select Invited:</label>
+          <select
+            id="invitees"
+            name="invitees"
+            autocomplete="off"
+            multiple
+          ></select>
+          <br />
 
-        const date = data.date?.toDate ? data.date.toDate() : new Date();
+          <button type="submit">Create Event</button>
+        </form>
+      </div>
+    </main>
 
-        card.innerHTML = `
-          <h3>Event on <input type="date" value="${date.toISOString().split('T')[0]}" class="date-input" autocomplete="off"></h3>
-          <label>Host:<input type="text" class="host-input" autocomplete="name" value="${data.host || ''}"></label><br>
-          <label>Notes:<input type="text" class="notes-input" autocomplete="off" value="${data.notes || ''}"></label><br>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        addDoc,
+        updateDoc,
+        doc,
+        onSnapshot,
+        query,
+        where,
+        Timestamp,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      const inviteesSelect = document.getElementById("invitees");
+      let choices;
+      const coreIds = [];
+      let players = [];
+
+      async function loadPlayers() {
+        const snapshot = await getDocs(collection(db, "players"));
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          players.push({ id: docSnap.id, name: data.name, role: data.role });
+          if (data.role === "core") {
+            coreIds.push(docSnap.id);
+            return;
+          }
+          const option = document.createElement("option");
+          option.value = docSnap.id;
+          option.textContent = data.name;
+          inviteesSelect.appendChild(option);
+        });
+        choices = new Choices(inviteesSelect, {
+          removeItemButton: true,
+          searchResultLimit: 50,
+          shouldSort: true,
+        });
+      }
+
+      loadPlayers();
+
+      const liveContainer = document.getElementById("liveEvents");
+
+      function toId(v) {
+        return typeof v === "string" ? v : v?.id;
+      }
+
+      function renderLiveEvents(docs) {
+        liveContainer.innerHTML = "";
+        docs.forEach((docSnap) => {
+          const data = docSnap.data();
+          const id = docSnap.id;
+          const card = document.createElement("div");
+          card.className = "event-card";
+
+          const date = data.date?.toDate ? data.date.toDate() : new Date();
+
+          card.innerHTML = `
+          <h3>Event on <input type="date" value="${date.toISOString().split("T")[0]}" class="date-input" autocomplete="off"></h3>
+          <label>Host:<input type="text" class="host-input" autocomplete="name" value="${data.host || ""}"></label><br>
+          <label>Notes:<input type="text" class="notes-input" autocomplete="off" value="${data.notes || ""}"></label><br>
           <label>Invited:<select class="invite-select" autocomplete="off" multiple></select></label><br>
           <label>Attended:<select class="attend-select" autocomplete="off" multiple></select></label><br>
         `;
 
-        const inviteSel = card.querySelector(".invite-select");
-        const attendSel = card.querySelector(".attend-select");
+          const inviteSel = card.querySelector(".invite-select");
+          const attendSel = card.querySelector(".attend-select");
 
-        const invitedIds = (data.invited || []).map(toId);
-        const attendedIds = (data.attended || []).map(toId);
+          const invitedIds = (data.invited || []).map(toId);
+          const attendedIds = (data.attended || []).map(toId);
 
-        const inviteChoices = new Choices(inviteSel, {
-          removeItemButton: true,
-          choices: players
-            .filter(p => p.role !== "core")
-            .map(p => ({ value: p.id, label: p.name, selected: invitedIds.includes(p.id) }))
+          const inviteChoices = new Choices(inviteSel, {
+            removeItemButton: true,
+            choices: players
+              .filter((p) => p.role !== "core")
+              .map((p) => ({
+                value: p.id,
+                label: p.name,
+                selected: invitedIds.includes(p.id),
+              })),
+          });
+
+          const attendChoices = new Choices(attendSel, {
+            removeItemButton: true,
+            choices: players.map((p) => ({
+              value: p.id,
+              label: p.name,
+              selected: attendedIds.includes(p.id),
+            })),
+          });
+
+          function updateAttendChoices(initial = false) {
+            const currentSelected = initial
+              ? attendedIds
+              : attendChoices.getValue(true);
+            const allowed = new Set([
+              ...coreIds,
+              ...inviteChoices.getValue(true),
+              ...currentSelected,
+            ]);
+            const opts = players
+              .filter((p) => allowed.has(p.id))
+              .map((p) => ({
+                value: p.id,
+                label: p.name,
+                selected: currentSelected.includes(p.id),
+              }));
+            attendChoices.setChoices(opts, "value", "label", true);
+          }
+
+          updateAttendChoices(true);
+          inviteSel.addEventListener("change", () => updateAttendChoices());
+
+          const saveBtn = document.createElement("button");
+          saveBtn.textContent = "Save";
+          saveBtn.addEventListener("click", async () => {
+            await updateDoc(doc(db, "events", id), {
+              date: Timestamp.fromDate(
+                new Date(card.querySelector(".date-input").value),
+              ),
+              host: card.querySelector(".host-input").value.trim(),
+              notes: card.querySelector(".notes-input").value.trim(),
+              invited: Array.from(
+                new Set([...coreIds, ...inviteChoices.getValue(true)]),
+              ),
+              attended: attendChoices.getValue(true),
+            });
+          });
+
+          const lockBtn = document.createElement("button");
+          lockBtn.textContent = "Lock Event";
+          lockBtn.style.marginLeft = "0.5rem";
+          lockBtn.addEventListener("click", async () => {
+            await updateDoc(doc(db, "events", id), { locked: true });
+          });
+
+          card.appendChild(saveBtn);
+          card.appendChild(lockBtn);
+
+          liveContainer.appendChild(card);
         });
+      }
 
-        const attendChoices = new Choices(attendSel, {
-          removeItemButton: true,
-          choices: players.map(p => ({ value: p.id, label: p.name, selected: attendedIds.includes(p.id) }))
-        });
+      onSnapshot(
+        query(collection(db, "events"), where("locked", "==", false)),
+        (snap) => {
+          renderLiveEvents(snap.docs);
+        },
+      );
 
-         function updateAttendChoices(initial = false) {
-          const currentSelected = initial ? attendedIds : attendChoices.getValue(true);
-          const allowed = new Set([
-            ...coreIds,
-            ...inviteChoices.getValue(true),
-            ...currentSelected,
-          ]);
-          const opts = players
-            .filter(p => allowed.has(p.id))
-            .map(p => ({ value: p.id, label: p.name, selected: currentSelected.includes(p.id) }));
-          attendChoices.setChoices(opts, 'value', 'label', true);
+      const form = document.getElementById("eventForm");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const dateInput = document.getElementById("eventDate").value;
+        const host = document.getElementById("host").value.trim();
+        const notes = document.getElementById("notes").value.trim();
+        const selected = choices ? choices.getValue(true) : [];
+        const invitedIds = Array.from(new Set([...coreIds, ...selected]));
+
+        try {
+          await addDoc(collection(db, "events"), {
+            date: Timestamp.fromDate(new Date(dateInput)),
+            host,
+            invited: invitedIds,
+            attended: [],
+            notes,
+            locked: false,
+            notified: false,
+          });
+
+          form.reset();
+        } catch (error) {
+          console.error("Error creating event:", error);
+          alert("Something went wrong.");
         }
+      });
+    </script>
+    <script>
+      fetch("nav.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("navbar-placeholder").innerHTML = html;
 
-        updateAttendChoices(true);
-        inviteSel.addEventListener('change', () => updateAttendChoices());
+          const hamburger = document.getElementById("hamburgerBtn");
+          const navLinks = document.getElementById("navLinks");
+          hamburger?.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+          });
 
-
-        const saveBtn = document.createElement("button");
-        saveBtn.textContent = "Save";
-        saveBtn.addEventListener("click", async () => {
-          await updateDoc(doc(db, "events", id), {
-            date: Timestamp.fromDate(new Date(card.querySelector(".date-input").value)),
-            host: card.querySelector(".host-input").value.trim(),
-            notes: card.querySelector(".notes-input").value.trim(),
-            invited: Array.from(new Set([...coreIds, ...inviteChoices.getValue(true)])),
-            attended: attendChoices.getValue(true)
+          document.addEventListener("click", (e) => {
+            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+              navLinks.classList.remove("show");
+            }
           });
         });
-
-        const lockBtn = document.createElement("button");
-        lockBtn.textContent = "Lock Event";
-        lockBtn.style.marginLeft = "0.5rem";
-        lockBtn.addEventListener("click", async () => {
-          await updateDoc(doc(db, "events", id), { locked: true });
-        });
-
-        card.appendChild(saveBtn);
-        card.appendChild(lockBtn);
-
-        liveContainer.appendChild(card);
-      });
-    }
-
-    onSnapshot(query(collection(db, "events"), where("locked", "==", false)), (snap) => {
-      renderLiveEvents(snap.docs);
-    });
-
-    const form = document.getElementById("eventForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const dateInput = document.getElementById("eventDate").value;
-      const host = document.getElementById("host").value.trim();
-      const notes = document.getElementById("notes").value.trim();
-      const selected = choices ? choices.getValue(true) : [];
-      const invitedIds = Array.from(new Set([...coreIds, ...selected]));
-
-      try {
-        await addDoc(collection(db, "events"), {
-          date: Timestamp.fromDate(new Date(dateInput)),
-          host,
-          invited: invitedIds,
-          attended: [],
-          notes,
-          locked: false,
-          notified: false
-        });
-
-        form.reset();
-      } catch (error) {
-        console.error("Error creating event:", error);
-        alert("Something went wrong.");
-      }
-    });
-  </script>
- <script>
-  fetch('nav.html')
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById('navbar-placeholder').innerHTML = html;
-
-      const hamburger = document.getElementById('hamburgerBtn');
-      const navLinks = document.getElementById('navLinks');
-      hamburger?.addEventListener('click', () => {
-        navLinks.classList.toggle('show');
-      });
-      
-      document.addEventListener('click', (e) => {
-        if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
-          navLinks.classList.remove('show');
-        }
-      });
-    });
-</script>
-</body>
+    </script>
+  </body>
 </html>

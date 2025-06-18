@@ -1,215 +1,248 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Players List</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Players List</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
 
-</head>
-<body>
-  <div id="navbar-placeholder"></div>
-<main class="page-content">
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
-  <div class="container">
-    <div class="page-header mobile-offset">
-      <h1 class="page-title">📇 Player Directory</h1>
-    </div>
-     <div id="coreSection" class="section">
-      <div id="corePlayers" class="players-grid"></div>
-    </div>
-    <div id="otherSection" class="section">
-      <div id="otherPlayers" class="players-grid"></div>
-    </div>
-  </div>
-</main>
+      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      updateDoc,
-      doc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-      authDomain: "poker-crm.firebaseapp.com",
-      projectId: "poker-crm",
-      storageBucket: "poker-crm.appspot.com",
-      messagingSenderId: "218784808902",
-      appId: "1:218784808902:web:c587bdf584d704f7733107"
-    };
+      onAuthStateChanged(auth, (user) => {
+        if (user && whitelist.includes(user.email)) {
+          return;
+        }
+        if (user) signOut(auth);
+        window.location.href = "login.html";
+      });
+    </script>
+  </head>
+  <body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+      <div class="container">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">📇 Player Directory</h1>
+        </div>
+        <div id="coreSection" class="section">
+          <div id="corePlayers" class="players-grid"></div>
+        </div>
+        <div id="otherSection" class="section">
+          <div id="otherPlayers" class="players-grid"></div>
+        </div>
+      </div>
+    </main>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        updateDoc,
+        doc,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    function sortContainer(container) {
-      const cards = Array.from(container.children);
-      cards.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
-      cards.forEach(c => container.appendChild(c));
-    }
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
-    function refreshCard(card, player) {
-      const info = card.querySelector('.player-info');
-      info.innerHTML = `
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      function sortContainer(container) {
+        const cards = Array.from(container.children);
+        cards.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
+        cards.forEach((c) => container.appendChild(c));
+      }
+
+      function refreshCard(card, player) {
+        const info = card.querySelector(".player-info");
+        info.innerHTML = `
         <strong>${player.name}</strong>
-        <span>📧 ${player.email || 'No email provided'}</span>
-        <span>📞 ${player.phone || 'No phone'}</span>
-        <span>🏷️ ${player.role || 'Unassigned'}</span>
+        <span>📧 ${player.email || "No email provided"}</span>
+        <span>📞 ${player.phone || "No phone"}</span>
+        <span>🏷️ ${player.role || "Unassigned"}</span>
       `;
-      card.dataset.name = player.name.toLowerCase();
+        card.dataset.name = player.name.toLowerCase();
 
-      const coreContainer = document.getElementById('corePlayers');
-      const otherContainer = document.getElementById('otherPlayers');
-      const target = player.role === 'core' ? coreContainer : otherContainer;
-      if (card.parentElement !== target) {
-        card.remove();
-        target.appendChild(card);
-      }
-      sortContainer(target);
-    }
-
-    function toggleEdit(card, player) {
-      let form = card.querySelector('form.edit-form');
-      if (form) {
-        form.remove();
-        return;
+        const coreContainer = document.getElementById("corePlayers");
+        const otherContainer = document.getElementById("otherPlayers");
+        const target = player.role === "core" ? coreContainer : otherContainer;
+        if (card.parentElement !== target) {
+          card.remove();
+          target.appendChild(card);
+        }
+        sortContainer(target);
       }
 
-      form = document.createElement('form');
-      form.className = 'edit-form';
-      form.innerHTML = `
+      function toggleEdit(card, player) {
+        let form = card.querySelector("form.edit-form");
+        if (form) {
+          form.remove();
+          return;
+        }
+
+        form = document.createElement("form");
+        form.className = "edit-form";
+        form.innerHTML = `
         <input name="name" type="text" value="${player.name}" autocomplete="name" placeholder="Full Name" required>
-        <input name="email" type="email" value="${player.email || ''}" autocomplete="email" placeholder="Email">
-        <input name="phone" type="tel" value="${player.phone || ''}" autocomplete="tel" placeholder="Phone">
-        <input name="invitedBy" type="text" value="${player.invitedBy || ''}" autocomplete="off" placeholder="Invited By">
-        ${player.role === 'core' ? '' : `
+        <input name="email" type="email" value="${player.email || ""}" autocomplete="email" placeholder="Email">
+        <input name="phone" type="tel" value="${player.phone || ""}" autocomplete="tel" placeholder="Phone">
+        <input name="invitedBy" type="text" value="${player.invitedBy || ""}" autocomplete="off" placeholder="Invited By">
+        ${
+          player.role === "core"
+            ? ""
+            : `
         <select name="role">
-          <option value="regular" ${player.role === 'regular' ? 'selected' : ''}>Regular</option>
-          <option value="guest" ${player.role === 'guest' ? 'selected' : ''}>Guest</option>
-        </select>`}
+          <option value="regular" ${player.role === "regular" ? "selected" : ""}>Regular</option>
+          <option value="guest" ${player.role === "guest" ? "selected" : ""}>Guest</option>
+        </select>`
+        }
         <div class="form-buttons">
           <button type="submit">Save</button>
           <button type="button" class="cancel-btn">Cancel</button>
         </div>
       `;
 
-      form.querySelector('.cancel-btn').addEventListener('click', () => form.remove());
+        form
+          .querySelector(".cancel-btn")
+          .addEventListener("click", () => form.remove());
 
-      form.addEventListener('submit', async e => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const updated = {
-          name: formData.get('name').trim(),
-          email: formData.get('email').trim(),
-          phone: formData.get('phone').trim(),
-          invitedBy: formData.get('invitedBy').trim()
-        };
-        if (formData.get('role') !== null) {
-          updated.role = formData.get('role');
-        } else {
-          updated.role = player.role;
-        }
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(form);
+          const updated = {
+            name: formData.get("name").trim(),
+            email: formData.get("email").trim(),
+            phone: formData.get("phone").trim(),
+            invitedBy: formData.get("invitedBy").trim(),
+          };
+          if (formData.get("role") !== null) {
+            updated.role = formData.get("role");
+          } else {
+            updated.role = player.role;
+          }
 
-        if (!updated.name) {
-          alert('Name is required');
-          return;
-        }
+          if (!updated.name) {
+            alert("Name is required");
+            return;
+          }
 
-        try {
-          const ref = doc(db, 'players', player.id);
-          await updateDoc(ref, updated);
-          Object.assign(player, updated);
-          refreshCard(card, player);
-          alert('Player updated!');
-          form.remove();
-        } catch (err) {
-          console.error(err);
-          alert('Update failed.');
-        }
-      });
+          try {
+            const ref = doc(db, "players", player.id);
+            await updateDoc(ref, updated);
+            Object.assign(player, updated);
+            refreshCard(card, player);
+            alert("Player updated!");
+            form.remove();
+          } catch (err) {
+            console.error(err);
+            alert("Update failed.");
+          }
+        });
 
-      card.appendChild(form);
-    }
+        card.appendChild(form);
+      }
 
-    function createCard(player) {
-      const div = document.createElement('div');
-      div.className = 'player-card';
-      div.dataset.id = player.id;
-      div.dataset.name = player.name.toLowerCase();
+      function createCard(player) {
+        const div = document.createElement("div");
+        div.className = "player-card";
+        div.dataset.id = player.id;
+        div.dataset.name = player.name.toLowerCase();
 
-      const info = document.createElement('div');
-      info.className = 'player-info';
-      info.innerHTML = `
+        const info = document.createElement("div");
+        info.className = "player-info";
+        info.innerHTML = `
         <strong>${player.name}</strong>
-        <span>📧 ${player.email || 'No email provided'}</span>
-        <span>📞 ${player.phone || 'No phone'}</span>
-        <span>🏷️ ${player.role || 'Unassigned'}</span>
+        <span>📧 ${player.email || "No email provided"}</span>
+        <span>📞 ${player.phone || "No phone"}</span>
+        <span>🏷️ ${player.role || "Unassigned"}</span>
       `;
 
-      const editBtn = document.createElement('button');
-      editBtn.textContent = 'Edit';
-      editBtn.type = 'button';
-      editBtn.addEventListener('click', () => toggleEdit(div, player));
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Edit";
+        editBtn.type = "button";
+        editBtn.addEventListener("click", () => toggleEdit(div, player));
 
-      div.appendChild(info);
-      div.appendChild(editBtn);
+        div.appendChild(info);
+        div.appendChild(editBtn);
 
-      return div;
-    }
+        return div;
+      }
 
-    async function renderPlayers() {
-      const snapshot = await getDocs(collection(db, 'players'));
-      const players = [];
-      snapshot.forEach(docSnap => {
-        players.push({ id: docSnap.id, ...docSnap.data() });
-      });
+      async function renderPlayers() {
+        const snapshot = await getDocs(collection(db, "players"));
+        const players = [];
+        snapshot.forEach((docSnap) => {
+          players.push({ id: docSnap.id, ...docSnap.data() });
+        });
 
-      players.sort((a, b) => a.name.localeCompare(b.name));
+        players.sort((a, b) => a.name.localeCompare(b.name));
 
-      const coreContainer = document.getElementById('corePlayers');
-      const otherContainer = document.getElementById('otherPlayers');
-      coreContainer.innerHTML = '';
-      otherContainer.innerHTML = '';
+        const coreContainer = document.getElementById("corePlayers");
+        const otherContainer = document.getElementById("otherPlayers");
+        coreContainer.innerHTML = "";
+        otherContainer.innerHTML = "";
 
-      players.forEach(player => {
-        const card = createCard(player);
-        if (player.role === 'core') {
-          coreContainer.appendChild(card);
-        } else {
-          otherContainer.appendChild(card);
-        }
-      });
+        players.forEach((player) => {
+          const card = createCard(player);
+          if (player.role === "core") {
+            coreContainer.appendChild(card);
+          } else {
+            otherContainer.appendChild(card);
+          }
+        });
 
-      sortContainer(coreContainer);
-      sortContainer(otherContainer);
-    }
+        sortContainer(coreContainer);
+        sortContainer(otherContainer);
+      }
 
-    renderPlayers();
-  </script>
-<script>
-  fetch('nav.html')
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById('navbar-placeholder').innerHTML = html;
+      renderPlayers();
+    </script>
+    <script>
+      fetch("nav.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("navbar-placeholder").innerHTML = html;
 
-      const hamburger = document.getElementById('hamburgerBtn');
-      const navLinks = document.getElementById('navLinks');
-      hamburger?.addEventListener('click', () => {
-        navLinks.classList.toggle('show');
-      });
-      
-      document.addEventListener('click', (e) => {
-        if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
-          navLinks.classList.remove('show');
-        }
-      });
-    });
-</script>
+          const hamburger = document.getElementById("hamburgerBtn");
+          const navLinks = document.getElementById("navLinks");
+          hamburger?.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+          });
 
-</body>
+          document.addEventListener("click", (e) => {
+            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+              navLinks.classList.remove("show");
+            }
+          });
+        });
+    </script>
+  </body>
 </html>

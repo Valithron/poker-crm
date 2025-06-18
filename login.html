@@ -1,99 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Login - BroTime CRM</title>
-  <link rel="stylesheet" href="styles.css" />
-  <style>
-    body {
-      background-color: #0b3d0b;
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-    .navbar {
-      background-color: #1c1c1c;
-      color: white;
-      padding: 0.75rem 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      z-index: 1000;
-    }
-    .navbar-title {
-      font-weight: bold;
-    }
-    .login-container {
-      background-color: #eaf2e1;
-      padding: 2rem;
-      margin: 6rem auto 2rem;
-      width: 90%;
-      max-width: 400px;
-      border-radius: 10px;
-    }
-    h2 {
-      text-align: center;
-      color: #063a06;
-    }
-    input {
-      width: 100%;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      background-color: #1c1c1c;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="navbar">
-    <div class="navbar-title">BroTime CRM</div>
-  </div>
-  <div class="login-container">
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Password" required />
-    <button onclick="login()">Log In</button>
-  </div>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script>
-    const firebaseConfig = {
-      // your firebase config here
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In - BroTime CRM</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
+  </head>
+  <body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+      <div class="container" style="max-width: 400px; text-align: center">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">Log In</h1>
+        </div>
+        <input
+          id="email"
+          type="email"
+          placeholder="Email"
+          style="width: 100%; margin-bottom: 0.75rem"
+        />
+        <input
+          id="password"
+          type="password"
+          placeholder="Password"
+          style="width: 100%; margin-bottom: 0.75rem"
+        />
+        <button id="loginBtn" style="width: 100%">Log In</button>
+      </div>
+    </main>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    const allowedEmails = ["admin@example.com", "sterling@example.com"]; // EDIT THIS LIST
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          if (!allowedEmails.includes(email)) {
-            alert("Access denied: Not an approved user.");
-            auth.signOut();
-            return;
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (err) {
+            alert(err.message);
           }
-          window.location.href = "index.html";
-        })
-        .catch((error) => {
-          alert(error.message);
         });
-    }
-  </script>
-</body>
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) return;
+        if (!whitelist.includes(user.email)) {
+          alert("Access denied: Not an approved user.");
+          await signOut(auth);
+          return;
+        }
+        window.location.href = "index.html";
+      });
+    </script>
+    <script>
+      fetch("nav.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("navbar-placeholder").innerHTML = html;
+          const hamburger = document.getElementById("hamburgerBtn");
+          const navLinks = document.getElementById("navLinks");
+          hamburger?.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+          });
+          document.addEventListener("click", (e) => {
+            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+              navLinks.classList.remove("show");
+            }
+          });
+        });
+    </script>
+  </body>
 </html>

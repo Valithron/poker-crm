@@ -1,92 +1,150 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BroTime CRM - Add Player</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BroTime CRM - Add Player</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
 
-</head>
-<body>
- <div id="navbar-placeholder"></div>
-<main class="page-content">
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  <div class="container">
-    <div class="page-header mobile-offset">
-      <h1 class="page-title">Add a New Player</h1>
-    </div>
-    <form id="playerForm">
-      <input type="text" id="name" name="name" autocomplete="name" placeholder="Full Name" required><br>
-      <input type="email" id="email" name="email" autocomplete="email" placeholder="Email"><br>
-      <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="Phone"><br>
-      <input type="text" id="invitedBy" name="invitedBy" autocomplete="off" placeholder="Invited By"><br>
-      <button type="submit">Add Player</button>
-    </form>
-  </div>
-</main>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
-  <script type="module">
-    // Firebase imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
 
-    const firebaseConfig = {
-  apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-  authDomain: "poker-crm.firebaseapp.com",
-  projectId: "poker-crm",
-  storageBucket: "poker-crm.appspot.com",
-  messagingSenderId: "218784808902",
-  appId: "1:218784808902:web:c587bdf584d704f7733107"
-};
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const form = document.getElementById("playerForm");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const role = "guest";
-      const invitedBy = document.getElementById("invitedBy").value.trim();
-
-      try {
-        await addDoc(collection(db, "players"), {
-          name,
-          email,
-          phone,
-          role,
-          invitedBy,
-          attendance: [] // Start with empty array
-        });
-        alert("Player added!");
-        form.reset();
-      } catch (error) {
-        console.error("Error adding document: ", error);
-        alert("Something went wrong.");
-      }
-    });
-  </script>
-<script>
-  fetch('nav.html')
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById('navbar-placeholder').innerHTML = html;
-
-      const hamburger = document.getElementById('hamburgerBtn');
-      const navLinks = document.getElementById('navLinks');
-      hamburger?.addEventListener('click', () => {
-        navLinks.classList.toggle('show');
+      onAuthStateChanged(auth, (user) => {
+        if (user && whitelist.includes(user.email)) {
+          return;
+        }
+        if (user) signOut(auth);
+        window.location.href = "login.html";
       });
-      
-      document.addEventListener('click', (e) => {
-        if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
-          navLinks.classList.remove('show');
+    </script>
+  </head>
+  <body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+      <div class="container">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">Add a New Player</h1>
+        </div>
+        <form id="playerForm">
+          <input
+            type="text"
+            id="name"
+            name="name"
+            autocomplete="name"
+            placeholder="Full Name"
+            required
+          /><br />
+          <input
+            type="email"
+            id="email"
+            name="email"
+            autocomplete="email"
+            placeholder="Email"
+          /><br />
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            autocomplete="tel"
+            placeholder="Phone"
+          /><br />
+          <input
+            type="text"
+            id="invitedBy"
+            name="invitedBy"
+            autocomplete="off"
+            placeholder="Invited By"
+          /><br />
+          <button type="submit">Add Player</button>
+        </form>
+      </div>
+    </main>
+
+    <script type="module">
+      // Firebase imports
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      const form = document.getElementById("playerForm");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+        const role = "guest";
+        const invitedBy = document.getElementById("invitedBy").value.trim();
+
+        try {
+          await addDoc(collection(db, "players"), {
+            name,
+            email,
+            phone,
+            role,
+            invitedBy,
+            attendance: [], // Start with empty array
+          });
+          alert("Player added!");
+          form.reset();
+        } catch (error) {
+          console.error("Error adding document: ", error);
+          alert("Something went wrong.");
         }
       });
-    });
-</script>
-</body>
+    </script>
+    <script>
+      fetch("nav.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("navbar-placeholder").innerHTML = html;
+
+          const hamburger = document.getElementById("hamburgerBtn");
+          const navLinks = document.getElementById("navLinks");
+          hamburger?.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+          });
+
+          document.addEventListener("click", (e) => {
+            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+              navLinks.classList.remove("show");
+            }
+          });
+        });
+    </script>
+  </body>
 </html>

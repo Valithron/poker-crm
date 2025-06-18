@@ -1,126 +1,147 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>View Events</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>View Events</title>
+    <link rel="stylesheet" href="styles.css?v=3" />
 
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+        signOut,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-</head>
-<body>
- <div id="navbar-placeholder"></div>
-<main class="page-content">
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
 
+      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
 
-  <div class="page-header mobile-offset">
-    <h1 class="page-title">🗓️ Poker Night Events</h1>
-  </div>
-  <div id="eventList"></div>
-</main>
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
 
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    getDocs,
-    getDoc,
-    doc,
-    query,
-    where
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-    authDomain: "poker-crm.firebaseapp.com",
-    projectId: "poker-crm",
-    storageBucket: "poker-crm.appspot.com",
-    messagingSenderId: "218784808902",
-    appId: "1:218784808902:web:c587bdf584d704f7733107"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const eventList = document.getElementById("eventList");
-
-   async function fetchNames(ids) {
-    const names = [];
-    for (const id of ids || []) {
-      try {
-        const ref = typeof id === "string" ? doc(db, "players", id) : id;
-        const snap = await getDoc(ref);
-        names.push(snap.exists() ? snap.data().name : "[Unknown]");
-      } catch {
-        names.push("[Error]");
+      onAuthStateChanged(auth, (user) => {
+        if (user && whitelist.includes(user.email)) {
+          return;
         }
-      }
-      return names;
-    }
-
-   async function renderEvents() {
-    const q = query(collection(db, "events"), where("locked", "==", true));
-    const snap = await getDocs(q);
-    const events = [];
-    for (const d of snap.docs) {
-      const data = d.data();
-      const invited = await fetchNames(data.invited || []);
-      const attended = await fetchNames(data.attended || []);
-
-      events.push({
-  date: data.date?.toDate().toLocaleDateString() || "",
-        host: data.host || "",
-        notes: data.notes || "",
-        invited,
-        attended
+        if (user) signOut(auth);
+        window.location.href = "login.html";
       });
+    </script>
+  </head>
+  <body>
+    <div id="navbar-placeholder"></div>
+    <main class="page-content">
+      <div class="page-header mobile-offset">
+        <h1 class="page-title">🗓️ Poker Night Events</h1>
+      </div>
+      <div id="eventList"></div>
+    </main>
 
-    }
-    
-    eventList.innerHTML = "";
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        getDoc,
+        doc,
+        query,
+        where,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    events.sort((a,b) => new Date(b.date) - new Date(a.date));
-    for (const ev of events) {
-        const div = document.createElement('div');
-      div.className = 'event';
-      div.innerHTML = `
+      const firebaseConfig = {
+        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
+        authDomain: "poker-crm.firebaseapp.com",
+        projectId: "poker-crm",
+        storageBucket: "poker-crm.appspot.com",
+        messagingSenderId: "218784808902",
+        appId: "1:218784808902:web:c587bdf584d704f7733107",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const eventList = document.getElementById("eventList");
+
+      async function fetchNames(ids) {
+        const names = [];
+        for (const id of ids || []) {
+          try {
+            const ref = typeof id === "string" ? doc(db, "players", id) : id;
+            const snap = await getDoc(ref);
+            names.push(snap.exists() ? snap.data().name : "[Unknown]");
+          } catch {
+            names.push("[Error]");
+          }
+        }
+        return names;
+      }
+
+      async function renderEvents() {
+        const q = query(collection(db, "events"), where("locked", "==", true));
+        const snap = await getDocs(q);
+        const events = [];
+        for (const d of snap.docs) {
+          const data = d.data();
+          const invited = await fetchNames(data.invited || []);
+          const attended = await fetchNames(data.attended || []);
+
+          events.push({
+            date: data.date?.toDate().toLocaleDateString() || "",
+            host: data.host || "",
+            notes: data.notes || "",
+            invited,
+            attended,
+          });
+        }
+
+        eventList.innerHTML = "";
+
+        events.sort((a, b) => new Date(b.date) - new Date(a.date));
+        for (const ev of events) {
+          const div = document.createElement("div");
+          div.className = "event";
+          div.innerHTML = `
         <h2><strong>${ev.date}</strong></h2>
         ${ev.host ? `<p><strong>Host:</strong> ${ev.host}</p>` : ""}
         <p><strong>Notes:</strong> ${ev.notes || "—"}</p>
-        <div class="attendees"><strong>Invited:</strong><ul>${ev.invited.map(n=>`<li>${n}</li>`).join("")}</ul></div>
-        <div class="attendees"><strong>Attended:</strong><ul>${ev.attended.map(n=>`<li>${n}</li>`).join("")}</ul></div>
+        <div class="attendees"><strong>Invited:</strong><ul>${ev.invited.map((n) => `<li>${n}</li>`).join("")}</ul></div>
+        <div class="attendees"><strong>Attended:</strong><ul>${ev.attended.map((n) => `<li>${n}</li>`).join("")}</ul></div>
       `;
 
-      eventList.appendChild(div);
-
-
-    }
-  }
-
-  renderEvents();
-</script>
-
-<script>
-  fetch('nav.html')
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById('navbar-placeholder').innerHTML = html;
-
-      const hamburger = document.getElementById('hamburgerBtn');
-      const navLinks = document.getElementById('navLinks');
-      hamburger?.addEventListener('click', () => {
-        navLinks.classList.toggle('show');
-      });
-      
-      document.addEventListener('click', (e) => {
-        if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
-          navLinks.classList.remove('show');
+          eventList.appendChild(div);
         }
-      });
-    });
-</script>
+      }
 
+      renderEvents();
+    </script>
 
-</body>
+    <script>
+      fetch("nav.html")
+        .then((res) => res.text())
+        .then((html) => {
+          document.getElementById("navbar-placeholder").innerHTML = html;
+
+          const hamburger = document.getElementById("hamburgerBtn");
+          const navLinks = document.getElementById("navLinks");
+          hamburger?.addEventListener("click", () => {
+            navLinks.classList.toggle("show");
+          });
+
+          document.addEventListener("click", (e) => {
+            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
+              navLinks.classList.remove("show");
+            }
+          });
+        });
+    </script>
+  </body>
 </html>
