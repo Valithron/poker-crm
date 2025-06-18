@@ -82,14 +82,18 @@ h2,
   z-index: 1000;
 }
 
-.nav-brand a {
+.logo {
   color: white;
   text-decoration: none;
   font-weight: bold;
   font-size: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
-.nav-brand a:hover {
+.logo:hover {
   text-decoration: underline;
 }
 
@@ -130,9 +134,6 @@ h2,
   border: none;
   color: var(--button-text);
   cursor: pointer;
-  margin-left: auto;
-  /* allow absolute positioning on mobile */
-  position: relative;
 }
 
 /* Tag style multi-select */
@@ -401,10 +402,6 @@ button {
 
   .hamburger {
     display: block;
-    position: absolute;
-    top: 8px;
-    right: 1rem;
-    align-self: flex-start;
   }
 }
 
@@ -440,6 +437,12 @@ button {
   .container {
     margin: 1rem;
     padding: 1rem;
+  }
+}
+
+@media screen and (max-width: 400px) {
+  .logo {
+    font-size: 1rem;
   }
 }
 
@@ -506,10 +509,6 @@ button {
 
   .hamburger {
     display: block;
-    position: absolute;
-    top: 8px;
-    right: 1rem;
-    align-self: flex-start;
   }
 
   button,
