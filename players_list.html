@@ -6,36 +6,6 @@
     <title>Players List</title>
     <link rel="stylesheet" href="styles.css?v=3" />
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import {
-        getAuth,
-        onAuthStateChanged,
-        signOut,
-      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyDqLx1BmdM_01wmcOPPKyRh8PFnSw-dTH0",
-        authDomain: "poker-crm.firebaseapp.com",
-        projectId: "poker-crm",
-        storageBucket: "poker-crm.appspot.com",
-        messagingSenderId: "218784808902",
-        appId: "1:218784808902:web:c587bdf584d704f7733107",
-      };
-
-const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
-
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-
-      onAuthStateChanged(auth, (user) => {
-        if (user && whitelist.includes(user.email)) {
-          return;
-        }
-        if (user) signOut(auth);
-        window.location.href = "login.html";
-      });
-    </script>
   </head>
   <body>
     <div id="navbar-placeholder"></div>
@@ -244,5 +214,6 @@ const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
           });
         });
     </script>
+  <script type="module" src="authGuard.js"></script>
   </body>
 </html>
