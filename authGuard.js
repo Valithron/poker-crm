@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDqLx1BmdM_01wmeOPPKyRh8PFnSw-dTH0",
+  apiKey: "AIzaSyDqLxlBmdM_O1wmeOPPKyRh8PFnSw-dTH0",
   authDomain: "poker-crm.firebaseapp.com",
   projectId: "poker-crm",
   storageBucket: "poker-crm.appspot.com",
