@@ -33,11 +33,14 @@
       </div>
 
       <div class="chart-container">
-        <canvas id="topPlayersChart"></canvas>
+        <div id="topPlayersChart" style="width: 100%; height: 100%"></div>
+        <p id="noDataMessage" style="text-align: center"></p>
       </div>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/react/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import {
@@ -45,6 +48,7 @@
         collection,
         getDocs,
         getDoc,
+        doc,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -61,28 +65,48 @@
 
       async function buildAnalytics() {
         try {
-          const playersSnap = await getDocs(collection(db, "players"));
-          const eventsSnap = await getDocs(collection(db, "events"));
+          const [playersSnap, eventsSnap] = await Promise.all([
+            getDocs(collection(db, "players")),
+            getDocs(collection(db, "events")),
+          ]);
 
-          const players = [];
-          let totalAttendanceCount = 0;
-
-          playersSnap.forEach((docSnap) => {
-            const data = docSnap.data();
-            const count = (data.attendance || []).length;
-            players.push({ name: data.name, role: data.role, count });
-            totalAttendanceCount += count;
+          const playerInfo = {};
+          playersSnap.forEach((d) => {
+            const data = d.data();
+            playerInfo[d.id] = { name: data.name, role: data.role };
           });
 
-          const totalEvents = eventsSnap.size;
+          const lockedEvents = eventsSnap.docs.filter((d) => d.data().locked);
+          const attendanceCounts = {};
+          let totalAttendees = 0;
+
+          for (const docSnap of lockedEvents) {
+            const data = docSnap.data();
+            for (const ref of data.attended || []) {
+              try {
+                const pRef = typeof ref === "string" ? doc(db, "players", ref) : ref;
+                const pSnap = await getDoc(pRef);
+                const name = pSnap.exists() ? pSnap.data().name : "[Unknown]";
+                attendanceCounts[name] = (attendanceCounts[name] || 0) + 1;
+                totalAttendees++;
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+
+          const totalEvents = lockedEvents.length;
           const averageAttendance =
-            totalEvents > 0
-              ? Math.round(totalAttendanceCount / totalEvents)
-              : 0;
+            totalEvents > 0 ? Math.round(totalAttendees / totalEvents) : 0;
 
           document.getElementById("totalEvents").textContent = totalEvents;
-          document.getElementById("averageAttendance").textContent =
-            averageAttendance;
+          document.getElementById("averageAttendance").textContent = averageAttendance;
+
+          const players = Object.values(playerInfo).map((p) => ({
+            name: p.name,
+            role: p.role,
+            count: attendanceCounts[p.name] || 0,
+          }));
 
           const nameMap = {
             "Adam Oliver": "Adam",
@@ -91,7 +115,6 @@
             "John Slaine": "John",
             "Isaiah Jeub": "Isaiah",
             "Nathan Sleeger": "Nathan",
-            // add other mappings as needed
           };
 
           const comparator = (a, b) => {
@@ -115,63 +138,59 @@
 
           const sorted = players
             .filter((p) => p.role !== "core")
-            .sort(comparator)
-            .slice(0, 10);
+            .sort(comparator);
 
-          const chart = new Chart(document.getElementById("topPlayersChart"), {
-            type: "bar",
-            data: {
-              labels: sorted.map((x) => x.name),
-              datasets: [
-                {
-                  label: "Total Attendances",
-                  data: sorted.map((x) => x.count),
-                  backgroundColor: "#f5f5dc",
-                  hoverBackgroundColor: "#ffd700",
-                  borderColor: "#f5f5dc",
-                  borderWidth: 1,
-                },
-              ],
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  enabled: true,
-                  backgroundColor: "#000000",
-                  titleColor: "#90ee90",
-                  bodyColor: "#90ee90",
-                  displayColors: false,
-                },
-              },
-              scales: {
-                x: {
-                  ticks: {
-                    color: "#ffffff",
-                    font: { size: 12 },
-                    maxRotation: 45,
-                    minRotation: 45,
-                    autoSkip: false,
-                  },
-                  grid: {
-                    color: "#cccccc",
-                  },
-                },
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    stepSize: 1,
-                    color: "#ffffff",
-                  },
-                  grid: {
-                    color: "#cccccc",
-                  },
-                },
-              },
-            },
-          });
+          const chartData = Object.entries(attendanceCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+          const chartRoot = document.getElementById("topPlayersChart");
+          const msgEl = document.getElementById("noDataMessage");
+          chartRoot.innerHTML = "";
+
+          if (chartData.length === 0) {
+            msgEl.textContent =
+              "No attendance data yet. Lock your events to begin tracking analytics.";
+            return;
+          }
+          msgEl.textContent = "";
+
+          const {
+            ResponsiveContainer,
+            BarChart,
+            Bar,
+            XAxis,
+            YAxis,
+            CartesianGrid,
+            Tooltip,
+          } = Recharts;
+
+          ReactDOM.render(
+            React.createElement(
+              ResponsiveContainer,
+              { width: "100%", height: "100%" },
+              React.createElement(
+                BarChart,
+                { data: chartData },
+                React.createElement(CartesianGrid, { stroke: "#cccccc" }),
+                React.createElement(XAxis, {
+                  dataKey: "name",
+                  tick: { fill: "#ffffff" },
+                  angle: 45,
+                  textAnchor: "start",
+                }),
+                React.createElement(YAxis, {
+                  allowDecimals: false,
+                  tick: { fill: "#ffffff" },
+                }),
+                React.createElement(Tooltip, {
+                  contentStyle: { backgroundColor: "#000000", color: "#90ee90" },
+                }),
+                React.createElement(Bar, { dataKey: "count", fill: "#f5f5dc" })
+              )
+            ),
+            chartRoot
+          );
         } catch (err) {
           console.error("Failed to load analytics", err);
         }
