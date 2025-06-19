@@ -95,6 +95,10 @@
       const coreIds = [];
       let players = [];
 
+      function uniq(arr) {
+        return Array.from(new Set(arr));
+      }
+
       async function loadPlayers() {
         const snapshot = await getDocs(collection(db, "players"));
         snapshot.forEach((docSnap) => {
@@ -145,8 +149,8 @@
           const inviteSel = card.querySelector(".invite-select");
           const attendSel = card.querySelector(".attend-select");
 
-          const invitedIds = (data.invited || []).map(toId);
-          const attendedIds = (data.attended || []).map(toId);
+          const invitedIds = uniq((data.invited || []).map(toId));
+          const attendedIds = uniq((data.attended || []).map(toId));
 
           const inviteChoices = new Choices(inviteSel, {
             removeItemButton: true,
@@ -202,8 +206,8 @@
               ),
               host: card.querySelector(".host-input").value.trim(),
               notes: card.querySelector(".notes-input").value.trim(),
-              invited: Array.from(new Set([...coreIds, ...invitedValues])),
-              attended: Array.from(new Set(attendedValues)),
+              invited: uniq([...coreIds, ...invitedValues]),
+              attended: uniq(attendedValues),
             });
           });
 
@@ -236,7 +240,7 @@
         const host = document.getElementById("host").value.trim();
         const notes = document.getElementById("notes").value.trim();
         const selected = choices ? choices.getValue(true) : [];
-        const invitedIds = Array.from(new Set([...coreIds, ...selected]));
+        const invitedIds = uniq([...coreIds, ...selected]);
 
         try {
           await addDoc(collection(db, "events"), {
