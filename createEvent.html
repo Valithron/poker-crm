@@ -9,7 +9,6 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
     />
-
   </head>
   <body>
     <div id="navbar-placeholder"></div>
@@ -194,16 +193,17 @@
           const saveBtn = document.createElement("button");
           saveBtn.textContent = "Save";
           saveBtn.addEventListener("click", async () => {
+            const invitedValues = inviteChoices.getValue(true);
+            const attendedValues = attendChoices.getValue(true);
+
             await updateDoc(doc(db, "events", id), {
               date: Timestamp.fromDate(
                 new Date(card.querySelector(".date-input").value),
               ),
               host: card.querySelector(".host-input").value.trim(),
               notes: card.querySelector(".notes-input").value.trim(),
-              invited: Array.from(
-                new Set([...coreIds, ...inviteChoices.getValue(true)]),
-              ),
-              attended: attendChoices.getValue(true),
+              invited: Array.from(new Set([...coreIds, ...invitedValues])),
+              attended: Array.from(new Set(attendedValues)),
             });
           });
 
@@ -275,6 +275,6 @@
           });
         });
     </script>
-  <script type="module" src="authGuard.js"></script>
+    <script type="module" src="authGuard.js"></script>
   </body>
 </html>

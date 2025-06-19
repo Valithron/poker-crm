@@ -141,6 +141,16 @@ h2,
   width: 100%;
 }
 
+/* Ensure dropdown text remains visible */
+.selectize-dropdown,
+.selectize-input,
+.selectize-input.items.has-options.full.has-items,
+.choices__list--dropdown,
+.choices__inner {
+  color: #000 !important;
+  background-color: #fff !important;
+}
+
 /* Input fields */
 input,
 select,
