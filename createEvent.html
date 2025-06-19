@@ -174,8 +174,8 @@
 
           function updateAttendChoices(initial = false) {
             const currentSelected = initial
-              ? attendedIds
-              : attendChoices.getValue(true);
+              ? uniq(attendedIds)
+              : uniq(attendChoices.getValue(true));
             const allowed = new Set([
               ...coreIds,
               ...inviteChoices.getValue(true),
@@ -186,9 +186,13 @@
               .map((p) => ({
                 value: p.id,
                 label: p.name,
-                selected: currentSelected.includes(p.id),
               }));
+
+            // Clear existing chips/choices before repopulating to avoid duplicates
+            attendChoices.removeActiveItems();
+            attendChoices.clearChoices();
             attendChoices.setChoices(opts, "value", "label", true);
+            currentSelected.forEach((id) => attendChoices.setChoiceByValue(id));
           }
 
           updateAttendChoices(true);
