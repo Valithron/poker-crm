@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>View Events</title>
     <link rel="stylesheet" href="styles.css?v=3" />
-
   </head>
   <body>
     <div id="navbar-placeholder"></div>
     <main class="page-content">
-      <div class="page-header mobile-offset">
-        <h1 class="page-title">🗓️ Poker Night Events</h1>
+      <div class="container">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">🗓️ Poker Night Events</h1>
+        </div>
+        <div id="eventList"></div>
       </div>
-      <div id="eventList"></div>
     </main>
 
     <script type="module">
@@ -24,8 +25,6 @@
         getDocs,
         getDoc,
         doc,
-        query,
-        where,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
       const firebaseConfig = {
@@ -56,16 +55,19 @@
       }
 
       async function renderEvents() {
-        const q = query(collection(db, "events"), where("locked", "==", true));
-        const snap = await getDocs(q);
+        const snap = await getDocs(collection(db, "events"));
         const events = [];
         for (const d of snap.docs) {
           const data = d.data();
           const invited = await fetchNames(data.invited || []);
           const attended = await fetchNames(data.attended || []);
 
+          const dateObj = data.date?.toDate ? data.date.toDate() : new Date();
+
           events.push({
-            date: data.date?.toDate().toLocaleDateString() || "",
+            locked: !!data.locked,
+            dateObj,
+            date: dateObj.toLocaleDateString(),
             host: data.host || "",
             notes: data.notes || "",
             invited,
@@ -75,16 +77,20 @@
 
         eventList.innerHTML = "";
 
-        events.sort((a, b) => new Date(b.date) - new Date(a.date));
+        events.sort((a, b) => b.dateObj - a.dateObj);
         for (const ev of events) {
           const div = document.createElement("div");
           div.className = "event";
           div.innerHTML = `
-        <h2><strong>${ev.date}</strong></h2>
+        <h2><strong>${ev.locked ? "🔒 " : ""}${ev.date}</strong></h2>
         ${ev.host ? `<p><strong>Host:</strong> ${ev.host}</p>` : ""}
         <p><strong>Notes:</strong> ${ev.notes || "—"}</p>
-        <div class="attendees"><strong>Invited:</strong><ul>${ev.invited.map((n) => `<li>${n}</li>`).join("")}</ul></div>
-        <div class="attendees"><strong>Attended:</strong><ul>${ev.attended.map((n) => `<li>${n}</li>`).join("")}</ul></div>
+        <div class="attendees"><strong>Invited:</strong><ul>${ev.invited
+          .map((n) => `<li>${n}</li>`)
+          .join("")}</ul></div>
+        <div class="attendees"><strong>Attended:</strong><ul>${ev.attended
+          .map((n) => `<li>${n}</li>`)
+          .join("")}</ul></div>
       `;
 
           eventList.appendChild(div);
@@ -113,6 +119,6 @@
           });
         });
     </script>
-  <script type="module" src="authGuard.js"></script>
+    <script type="module" src="authGuard.js"></script>
   </body>
 </html>
