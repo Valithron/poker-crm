@@ -33,7 +33,7 @@
       </div>
 
       <div class="chart-container">
-        <div id="topPlayersChart" style="width: 100%; height: 100%"></div>
+        <div id="attendanceChart" style="width:100%; height:300px;"></div>
         <p id="noDataMessage" style="text-align: center"></p>
       </div>
     </main>
@@ -146,8 +146,12 @@
 
           console.log("chartData", chartData);
 
-          const chartRoot = document.getElementById("topPlayersChart");
+          const chartRoot = document.getElementById("attendanceChart");
           const msgEl = document.getElementById("noDataMessage");
+          if (!chartRoot) {
+            console.error("attendanceChart element not found");
+            return;
+          }
           chartRoot.innerHTML = "";
 
           if (chartData.length === 0) {
