@@ -219,42 +219,22 @@
           }
           msgEl.textContent = "";
 
-          const {
-            ResponsiveContainer,
-            BarChart,
-            Bar,
-            XAxis,
-            YAxis,
-            CartesianGrid,
-            Tooltip,
-          } = Recharts;
+          const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } =
+            Recharts;
 
-          ReactDOM.render(
+          const chartElement = React.createElement(
+            ResponsiveContainer,
+            { width: "100%", height: 300 },
             React.createElement(
-              ResponsiveContainer,
-              { width: "100%", height: 300 },
-              React.createElement(
-                BarChart,
-                { data: chartData },
-                React.createElement(CartesianGrid, { stroke: "#cccccc" }),
-                React.createElement(XAxis, {
-                  dataKey: "name",
-                  tick: { fill: "#ffffff" },
-                  angle: 45,
-                  textAnchor: "start",
-                }),
-                React.createElement(YAxis, {
-                  allowDecimals: false,
-                  tick: { fill: "#ffffff" },
-                }),
-                React.createElement(Tooltip, {
-                  contentStyle: { backgroundColor: "#000000", color: "#90ee90" },
-                }),
-                React.createElement(Bar, { dataKey: "count", fill: "#f5f5dc" })
-              )
-            ),
-            chartRoot
+              BarChart,
+              { data: chartData },
+              React.createElement(XAxis, { dataKey: "name" }),
+              React.createElement(YAxis, null),
+              React.createElement(Tooltip, null),
+              React.createElement(Bar, { dataKey: "count", fill: "#00bcd4" })
+            )
           );
+
 
           const allNames = Object.values(playerInfo)
             .map((p) => p.name)
@@ -294,6 +274,9 @@
           populateSelect(sel2);
           sel1.addEventListener("change", () => renderStats(sel1.value, stats1));
           sel2.addEventListener("change", () => renderStats(sel2.value, stats2));
+
+          ReactDOM.render(chartElement, chartRoot);
+
         } catch (err) {
           console.error("Failed to load analytics", err);
         }
