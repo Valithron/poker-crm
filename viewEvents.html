@@ -54,13 +54,34 @@
         return names;
       }
 
+      async function fetchAttendees(arr) {
+        const res = [];
+        for (const item of arr || []) {
+          try {
+            let ref = item;
+            let earnings;
+            if (typeof item === "object") {
+              earnings = item.earnings;
+              ref = typeof item.id === "string" ? doc(db, "players", item.id) : item.id;
+            }
+            if (typeof ref === "string") ref = doc(db, "players", ref);
+            const snap = await getDoc(ref);
+            const name = snap.exists() ? snap.data().name : "[Unknown]";
+            res.push({ name, earnings });
+          } catch {
+            res.push({ name: "[Error]" });
+          }
+        }
+        return res;
+      }
+
       async function renderEvents() {
         const snap = await getDocs(collection(db, "events"));
         const events = [];
         for (const d of snap.docs) {
           const data = d.data();
           const invited = await fetchNames(data.invited || []);
-          const attended = await fetchNames(data.attended || []);
+          const attended = await fetchAttendees(data.attended || []);
 
           const dateObj = data.date?.toDate ? data.date.toDate() : new Date();
 
@@ -89,7 +110,7 @@
           .map((n) => `<li>${n}</li>`)
           .join("")}</ul></div>
         <div class="attendees"><strong>Attended:</strong><ul>${ev.attended
-          .map((n) => `<li>${n}</li>`)
+          .map((p) => `<li>${p.name}${p.earnings !== undefined ? ' ' + '(' + (p.earnings >= 0 ? '+' : '') + Number(p.earnings).toFixed(2) + ')' : ''}</li>`)
           .join("")}</ul></div>
       `;
 

@@ -36,6 +36,19 @@
         <div id="attendanceChart" style="width:100%; height:300px;"></div>
         <p id="noDataMessage" style="text-align: center"></p>
       </div>
+
+      <div class="earnings-comparison">
+        <div class="player-select-panel">
+          <label for="playerOne">Select Player 1</label>
+          <select id="playerOne"></select>
+          <div id="playerOneStats" class="player-stats"></div>
+        </div>
+        <div class="player-select-panel">
+          <label for="playerTwo">Select Player 2</label>
+          <select id="playerTwo"></select>
+          <div id="playerTwoStats" class="player-stats"></div>
+        </div>
+      </div>
     </main>
 
     <script src="https://unpkg.com/react/umd/react.production.min.js"></script>
@@ -63,6 +76,38 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
 
+      function getPlayerEarningsStats(playerName, allEvents) {
+        const relevant = allEvents.filter((ev) =>
+          ev.attendees.some((p) => p.name === playerName)
+        );
+
+        let total = 0;
+        let wins = 0;
+        let losses = 0;
+        const earningsOverTime = [];
+
+        for (const ev of relevant) {
+          const p = ev.attendees.find((x) => x.name === playerName);
+          const e = Number(p.earnings || 0);
+          total += e;
+          earningsOverTime.push({ date: ev.date, earnings: e });
+          if (e > 0) wins++;
+          else if (e < 0) losses++;
+        }
+
+        const avg = relevant.length > 0 ? total / relevant.length : 0;
+
+        return {
+          totalEarnings: total.toFixed(2),
+          wins,
+          losses,
+          average: avg.toFixed(2),
+          lastEvent:
+            earningsOverTime[earningsOverTime.length - 1]?.earnings || 0,
+          earningsOverTime,
+        };
+      }
+
       async function buildAnalytics() {
         try {
           const [playersSnap, eventsSnap] = await Promise.all([
@@ -79,20 +124,33 @@
           const lockedEvents = eventsSnap.docs.filter((d) => d.data().locked);
           const attendanceCounts = {};
           let totalAttendees = 0;
+          const processedEvents = [];
 
           for (const docSnap of lockedEvents) {
             const data = docSnap.data();
+            const attendees = [];
             for (const ref of data.attended || []) {
               try {
-                const pRef = typeof ref === "string" ? doc(db, "players", ref) : ref;
+                let pRef = ref;
+                let earnings = 0;
+                if (typeof ref === "object") {
+                  earnings = Number(ref.earnings || 0);
+                  pRef = ref.id ? (typeof ref.id === "string" ? doc(db, "players", ref.id) : ref.id) : ref;
+                }
+                if (typeof pRef === "string") pRef = doc(db, "players", pRef);
                 const pSnap = await getDoc(pRef);
                 const name = pSnap.exists() ? pSnap.data().name : "[Unknown]";
+                attendees.push({ name, earnings });
                 attendanceCounts[name] = (attendanceCounts[name] || 0) + 1;
                 totalAttendees++;
               } catch {
-                /* ignore */
+                attendees.push({ name: "[Error]", earnings: 0 });
               }
             }
+            processedEvents.push({
+              date: data.date?.toDate ? data.date.toDate() : new Date(),
+              attendees,
+            });
           }
 
           const totalEvents = lockedEvents.length;
@@ -177,7 +235,48 @@
             )
           );
 
+
+          const allNames = Object.values(playerInfo)
+            .map((p) => p.name)
+            .sort((a, b) => a.localeCompare(b));
+
+          const sel1 = document.getElementById("playerOne");
+          const sel2 = document.getElementById("playerTwo");
+          const stats1 = document.getElementById("playerOneStats");
+          const stats2 = document.getElementById("playerTwoStats");
+
+          function populateSelect(sel) {
+            sel.innerHTML = "<option value=''>--Select--</option>";
+            allNames.forEach((n) => {
+              const opt = document.createElement("option");
+              opt.value = n;
+              opt.textContent = n;
+              sel.appendChild(opt);
+            });
+          }
+
+          function renderStats(name, container) {
+            if (!name) {
+              container.innerHTML = "";
+              return;
+            }
+            const stats = getPlayerEarningsStats(name, processedEvents);
+            const last = Number(stats.lastEvent).toFixed(2);
+            container.innerHTML = `
+              <p><strong>Total:</strong> ${stats.totalEarnings}</p>
+              <p><strong>Wins:</strong> ${stats.wins} / <strong>Losses:</strong> ${stats.losses}</p>
+              <p><strong>Avg/Event:</strong> ${stats.average}</p>
+              <p><strong>Last Event:</strong> ${last >= 0 ? '+' : ''}${last}</p>
+            `;
+          }
+
+          populateSelect(sel1);
+          populateSelect(sel2);
+          sel1.addEventListener("change", () => renderStats(sel1.value, stats1));
+          sel2.addEventListener("change", () => renderStats(sel2.value, stats2));
+
           ReactDOM.render(chartElement, chartRoot);
+
         } catch (err) {
           console.error("Failed to load analytics", err);
         }
