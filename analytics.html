@@ -212,30 +212,6 @@
           }
           chartRoot.innerHTML = "";
 
-          if (chartData.length === 0) {
-            msgEl.textContent =
-              "No attendance data yet. Lock your events to begin tracking analytics.";
-            return;
-          }
-          msgEl.textContent = "";
-
-          const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } =
-            Recharts;
-
-          const chartElement = React.createElement(
-            ResponsiveContainer,
-            { width: "100%", height: 300 },
-            React.createElement(
-              BarChart,
-              { data: chartData },
-              React.createElement(XAxis, { dataKey: "name" }),
-              React.createElement(YAxis, null),
-              React.createElement(Tooltip, null),
-              React.createElement(Bar, { dataKey: "count", fill: "#00bcd4" })
-            )
-          );
-
-
           const allNames = Object.values(playerInfo)
             .map((p) => p.name)
             .sort((a, b) => a.localeCompare(b));
@@ -274,6 +250,29 @@
           populateSelect(sel2);
           sel1.addEventListener("change", () => renderStats(sel1.value, stats1));
           sel2.addEventListener("change", () => renderStats(sel2.value, stats2));
+
+          if (chartData.length === 0) {
+            msgEl.textContent =
+              "No attendance data yet. Lock your events to begin tracking analytics.";
+            return;
+          }
+          msgEl.textContent = "";
+
+          const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } =
+            Recharts;
+
+          const chartElement = React.createElement(
+            ResponsiveContainer,
+            { width: "100%", height: 300 },
+            React.createElement(
+              BarChart,
+              { data: chartData },
+              React.createElement(XAxis, { dataKey: "name" }),
+              React.createElement(YAxis, null),
+              React.createElement(Tooltip, null),
+              React.createElement(Bar, { dataKey: "count", fill: "#00bcd4" })
+            )
+          );
 
           ReactDOM.render(chartElement, chartRoot);
 
