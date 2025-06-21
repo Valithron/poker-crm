@@ -51,13 +51,17 @@
       </div>
     </main>
 
-    <script src="https://unpkg.com/react/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
     <script type="module">
-      const React = window.React;
-      const ReactDOM = window.ReactDOM;
-      const Recharts = window.Recharts;
+      import React from "https://esm.sh/react";
+      import ReactDOM from "https://esm.sh/react-dom";
+      import {
+        ResponsiveContainer,
+        BarChart,
+        Bar,
+        XAxis,
+        YAxis,
+        Tooltip
+      } from "https://esm.sh/recharts";
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import {
         getFirestore,
@@ -261,14 +265,6 @@
           }
           msgEl.textContent = "";
 
-          const {
-            ResponsiveContainer,
-            BarChart,
-            Bar,
-            XAxis,
-            YAxis,
-            Tooltip,
-          } = Recharts;
 
           const chartElement = React.createElement(
             ResponsiveContainer,
