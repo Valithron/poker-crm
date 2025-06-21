@@ -283,7 +283,7 @@
             )
           );
 
-          ReactDOM.createRoot(chartRoot).render(chartElement);
+          ReactDOM.render(chartElement, chartRoot);
 
         } catch (err) {
           console.error("Failed to load analytics", err);
