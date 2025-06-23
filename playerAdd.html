@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BroTime CRM - Add Player</title>
     <link rel="stylesheet" href="styles.css?v=3" />
-
   </head>
   <body>
     <div id="navbar-placeholder"></div>
@@ -116,6 +115,9 @@
           });
         });
     </script>
-  <script type="module" src="authGuard.js"></script>
+    <script type="module">
+      import { authCheck } from "./authGuard.js";
+      authCheck();
+    </script>
   </body>
 </html>

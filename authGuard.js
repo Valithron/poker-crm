@@ -2,8 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth,
   onAuthStateChanged,
+  signOut,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { enforceWhitelist } from "./accessControl.js";
+import { whitelist } from "./accessControl.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDqLxlBmdM_O1wmeOPPKyRh8PFnSw-dTH0",
@@ -17,10 +18,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-onAuthStateChanged(auth, async (user) => {
-  if (!(await enforceWhitelist(auth, user))) {
-    return;
-  }
-});
+export function authCheck() {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "login.html";
+      return;
+    }
+    if (!whitelist.includes(user.email)) {
+      await signOut(auth);
+      alert("Access denied: Not an approved user.");
+      window.location.href = "login.html";
+    }
+  });
+}
 
 export { auth };
