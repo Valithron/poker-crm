@@ -116,6 +116,7 @@
       }
 
       async function buildAnalytics() {
+        console.log('React modules:', window.React, window.ReactDOM, window.Recharts);
         try {
           const [playersSnap, eventsSnap] = await Promise.all([
             getDocs(collection(db, "players")),
