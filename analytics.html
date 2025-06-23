@@ -217,6 +217,12 @@
             console.error("attendanceChart element not found");
             return;
           }
+          const rect = chartRoot.getBoundingClientRect();
+          console.log("attendanceChart size:", rect);
+          if (rect.height === 0) {
+            msgEl.textContent =
+              "Chart container has zero height. Adjust layout to display data.";
+          }
           chartRoot.innerHTML = "";
 
           const allNames = Object.values(playerInfo)
