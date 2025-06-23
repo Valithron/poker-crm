@@ -45,12 +45,13 @@
         appId: "1:218784808902:web:c587bdf584d704f7733107",
       };
 
-      import { enforceWhitelist } from "./accessControl.js";
-
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
 
-      import { setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        setPersistence,
+        browserLocalPersistence,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
       setPersistence(auth, browserLocalPersistence).catch((error) => {
         console.error("Persistence error:", error);
@@ -68,10 +69,7 @@
           }
         });
 
-      onAuthStateChanged(auth, async (user) => {
-        if (!(await enforceWhitelist(auth, user))) {
-          return;
-        }
+      onAuthStateChanged(auth, () => {
         window.location.href = "index.html";
       });
     </script>

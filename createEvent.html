@@ -323,6 +323,9 @@
           });
         });
     </script>
-    <script type="module" src="authGuard.js"></script>
+    <script type="module">
+      import { authCheck } from "./authGuard.js";
+      authCheck();
+    </script>
   </body>
 </html>
