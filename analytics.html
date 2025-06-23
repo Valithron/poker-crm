@@ -216,6 +216,7 @@
           const msgEl = document.getElementById("noDataMessage");
           if (!chartRoot) {
             console.error("attendanceChart element not found");
+            msgEl.textContent = "Chart container not available.";
             return;
           }
           const rect = chartRoot.getBoundingClientRect();
@@ -287,6 +288,7 @@
           );
 
           ReactDOM.render(chartElement, chartRoot);
+          msgEl.textContent = "";
 
         } catch (err) {
           console.error("Failed to load analytics", err);
