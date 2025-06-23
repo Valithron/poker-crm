@@ -52,6 +52,7 @@
     </main>
 
     <script type="module">
+      console.log(window.React, window.ReactDOM, window.Recharts);
       window.addEventListener("DOMContentLoaded", async () => {
         const React = (await import("https://esm.sh/react")).default;
         const ReactDOM = (await import("https://esm.sh/react-dom")).default;
@@ -221,14 +222,17 @@
           const msgEl = document.getElementById("noDataMessage");
           if (!chartRoot) {
             console.error("attendanceChart element not found");
-            msgEl.textContent = "Chart container not available.";
+            if (msgEl) msgEl.textContent = "Chart container not found.";
             return;
           }
           const rect = chartRoot.getBoundingClientRect();
-          console.log("attendanceChart size:", rect);
+          console.log("attendanceChart rect:", rect);
           if (rect.height === 0) {
-            msgEl.textContent =
-              "Chart container has zero height. Adjust layout to display data.";
+            console.warn("attendanceChart height is zero", rect);
+            if (msgEl)
+              msgEl.textContent =
+                "Chart container has zero height. Adjust layout to display data.";
+            return;
           }
           chartRoot.innerHTML = "";
 
