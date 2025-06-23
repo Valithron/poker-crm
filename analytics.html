@@ -52,10 +52,32 @@
     </main>
 
     <script type="module">
-      console.log(window.React, window.ReactDOM, window.Recharts);
       window.addEventListener("DOMContentLoaded", async () => {
-        const React = (await import("https://esm.sh/react")).default;
-        const ReactDOM = (await import("https://esm.sh/react-dom")).default;
+        let React, ReactDOM, Recharts;
+        try {
+          React = (await import("https://esm.sh/react")).default;
+          window.React = React;
+          console.log("React loaded", React?.version, !!window.React);
+        } catch (e) {
+          console.error("Failed to load React", e);
+          return;
+        }
+        try {
+          ReactDOM = (await import("https://esm.sh/react-dom")).default;
+          window.ReactDOM = ReactDOM;
+          console.log("ReactDOM loaded", !!ReactDOM);
+        } catch (e) {
+          console.error("Failed to load ReactDOM", e);
+          return;
+        }
+        try {
+          Recharts = await import("https://esm.sh/recharts");
+          window.Recharts = Recharts;
+          console.log("Recharts loaded", Object.keys(Recharts));
+        } catch (e) {
+          console.error("Failed to load Recharts", e);
+          return;
+        }
         const {
           ResponsiveContainer,
           BarChart,
@@ -63,7 +85,7 @@
           XAxis,
           YAxis,
           Tooltip,
-        } = await import("https://esm.sh/recharts");
+        } = Recharts;
         const { initializeApp } = await import(
           "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
         );
@@ -219,6 +241,7 @@
           console.log("chartData", chartData);
 
           const chartRoot = document.getElementById("attendanceChart");
+          console.log("chartRoot element", chartRoot);
           const msgEl = document.getElementById("noDataMessage");
           if (!chartRoot) {
             console.error("attendanceChart element not found");
@@ -296,7 +319,12 @@
             )
           );
 
-          ReactDOM.render(chartElement, chartRoot);
+          try {
+            ReactDOM.createRoot(chartRoot).render(chartElement);
+          } catch (e) {
+            console.error("Chart render failed", e);
+            console.log("chartData used", chartData);
+          }
           msgEl.textContent = "";
 
         } catch (err) {
