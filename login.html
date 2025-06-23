@@ -34,7 +34,6 @@
         getAuth,
         signInWithEmailAndPassword,
         onAuthStateChanged,
-        signOut,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
       const firebaseConfig = {
@@ -46,7 +45,7 @@
         appId: "1:218784808902:web:c587bdf584d704f7733107",
       };
 
-      const whitelist = ["valturg@gmail.com", "ryanwall.biz@gmail.com"];
+      import { enforceWhitelist } from "./accessControl.js";
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
@@ -70,10 +69,7 @@
         });
 
       onAuthStateChanged(auth, async (user) => {
-        if (!user) return;
-        if (!whitelist.includes(user.email)) {
-          alert("Access denied: Not an approved user.");
-          await signOut(auth);
+        if (!(await enforceWhitelist(auth, user))) {
           return;
         }
         window.location.href = "index.html";

@@ -3,6 +3,7 @@ import {
   getAuth,
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { enforceWhitelist } from "./accessControl.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDqLxlBmdM_O1wmeOPPKyRh8PFnSw-dTH0",
@@ -16,9 +17,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Wait for auth state to load
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = "login.html";
+onAuthStateChanged(auth, async (user) => {
+  if (!(await enforceWhitelist(auth, user))) {
+    return;
   }
 });
+
+export { auth };
