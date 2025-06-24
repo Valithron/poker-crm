@@ -78,50 +78,45 @@
           const app = initializeApp(firebaseConfig);
           const db = getFirestore(app);
 
-          function getPlayerEarningsStats(playerName, allEvents) {
-            const attended = allEvents
-              .filter((ev) => ev.attendees.some((p) => p.name === playerName))
-              .map((ev) => {
-                const person = ev.attendees.find((x) => x.name === playerName);
-                return {
-                  date: ev.date,
-                  earnings:
-                    typeof person.earnings === "number"
-                      ? person.earnings
-                      : null,
-                };
-              });
-
-            // Sort by event date
-            attended.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            const cleanEvents = attended.filter(
-              (e) => typeof e.earnings === "number",
-            );
+          function getPlayerEarningsStats(playerDoc) {
+            const history = playerDoc.earningsHistory || [];
+            if (!history.length)
+              return {
+                totalEarnings: "N/A",
+                wins: 0,
+                losses: 0,
+                average: "N/A",
+                lastEvent: "N/A",
+                earningsOverTime: [],
+              };
 
             let total = 0;
             let wins = 0;
             let losses = 0;
+            const earningsOverTime = [];
 
-            for (const e of cleanEvents) {
-              total += e.earnings;
-              if (e.earnings > 0) wins++;
-              else if (e.earnings < 0) losses++;
+            const sorted = [...history].sort((a, b) =>
+              a.eventId.localeCompare(b.eventId),
+            );
+
+            for (const { amount } of sorted) {
+              if (typeof amount !== "number") continue;
+              total += amount;
+              earningsOverTime.push({ earnings: amount });
+              if (amount > 0) wins++;
+              if (amount < 0) losses++;
             }
 
-            const average =
-              cleanEvents.length > 0 ? total / cleanEvents.length : undefined;
+            const average = total / earningsOverTime.length;
+            const last = earningsOverTime.at(-1)?.earnings ?? 0;
 
             return {
-              totalEarnings: cleanEvents.length ? total.toFixed(2) : "N/A",
+              totalEarnings: total.toFixed(2),
               wins,
               losses,
-              average: typeof average === "number" ? average.toFixed(2) : "N/A",
-              lastEvent:
-                attended.length > 0 &&
-                typeof attended[attended.length - 1].earnings === "number"
-                  ? attended[attended.length - 1].earnings.toFixed(2)
-                  : "N/A",
+              average: average.toFixed(2),
+              lastEvent: last.toFixed(2),
+              earningsOverTime,
             };
           }
 
@@ -139,6 +134,7 @@
                   name: data.name,
                   firstName: data.firstName || (data.name || "").split(" ")[0],
                   role: data.role,
+                  earningsHistory: data.earningsHistory || [],
                 };
               });
 
@@ -147,40 +143,26 @@
               );
               const attendanceCounts = {};
               let totalAttendees = 0;
-              const processedEvents = [];
 
               for (const docSnap of lockedEvents) {
                 const data = docSnap.data();
-                const attendees = [];
                 for (const ref of data.attended || []) {
                   try {
                     let pRef = ref;
-                    let earnings = 0;
-                    if (typeof ref === "object") {
-                      earnings = Number(ref.earnings || 0);
-                      pRef = ref.id
-                        ? typeof ref.id === "string"
-                          ? doc(db, "players", ref.id)
-                          : ref.id
-                        : ref;
+                    if (typeof ref === "object" && ref.id) {
+                      pRef = typeof ref.id === "string"
+                        ? doc(db, "players", ref.id)
+                        : ref.id;
                     }
-                    if (typeof pRef === "string")
-                      pRef = doc(db, "players", pRef);
+                    if (typeof pRef === "string") pRef = doc(db, "players", pRef);
                     const pSnap = await getDoc(pRef);
-                    const name = pSnap.exists()
-                      ? pSnap.data().name
-                      : "[Unknown]";
-                    attendees.push({ name, earnings });
+                    const name = pSnap.exists() ? pSnap.data().name : "[Unknown]";
                     attendanceCounts[name] = (attendanceCounts[name] || 0) + 1;
                     totalAttendees++;
                   } catch {
-                    attendees.push({ name: "[Error]", earnings: 0 });
+                    // ignore
                   }
                 }
-                processedEvents.push({
-                  date: data.date?.toDate ? data.date.toDate() : new Date(),
-                  attendees,
-                });
               }
 
               const totalEvents = lockedEvents.length;
@@ -284,7 +266,11 @@
 
               function renderStats(name, container) {
                 if (!name) return (container.innerHTML = "");
-                const stats = getPlayerEarningsStats(name, processedEvents);
+                const playerDoc = Object.values(playerInfo).find(
+                  (p) => p.name === name,
+                );
+                if (!playerDoc) return (container.innerHTML = "");
+                const stats = getPlayerEarningsStats(playerDoc);
                 container.innerHTML = `
                   <p><strong>Total:</strong> ${
                     stats.totalEarnings !== "N/A" ? stats.totalEarnings : "N/A"
