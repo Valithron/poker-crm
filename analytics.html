@@ -280,7 +280,12 @@
                 React.createElement(
                   BarChart,
                   { data: chartData },
-                  React.createElement(XAxis, { dataKey: "name" }),
+                  React.createElement(XAxis, {
+                    dataKey: "name",
+                    angle: -45,
+                    textAnchor: "end",
+                    interval: 0,
+                  }),
                   React.createElement(YAxis, null),
                   React.createElement(Tooltip, null),
                   React.createElement(Bar, {
