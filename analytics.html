@@ -21,13 +21,15 @@
         </div>
       </div>
       <div id="coreSummarySection">
-        <h2 style="text-align: center; font-size: 1.1rem; margin-bottom: 0.5rem">
+        <h2
+          style="text-align: center; font-size: 1.1rem; margin-bottom: 0.5rem"
+        >
           BroTime Members
         </h2>
         <div id="coreSummary" class="core-summary"></div>
       </div>
       <div class="chart-container">
-        <div id="attendanceChart" style="width:100%; height:300px;"></div>
+        <div id="attendanceChart" style="width: 100%; height: 300px"></div>
         <p id="noDataMessage" style="text-align: center"></p>
       </div>
       <div class="earnings-comparison">
@@ -48,15 +50,11 @@
       window.addEventListener("DOMContentLoaded", async () => {
         try {
           const React = (await import("https://esm.sh/react")).default;
-          const ReactDOM = (await import("https://esm.sh/react-dom")).default;
-          const {
-            ResponsiveContainer,
-            BarChart,
-            Bar,
-            XAxis,
-            YAxis,
-            Tooltip,
-          } = await import("https://esm.sh/recharts");
+          const { createRoot } = await import(
+            "https://esm.sh/react-dom/client"
+          );
+          const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } =
+            await import("https://esm.sh/recharts");
           console.log("React version:", React?.version);
           console.log("Chart modules:", { ResponsiveContainer, BarChart });
 
@@ -82,7 +80,7 @@
 
           function getPlayerEarningsStats(playerName, allEvents) {
             const relevant = allEvents.filter((ev) =>
-              ev.attendees.some((p) => p.name === playerName)
+              ev.attendees.some((p) => p.name === playerName),
             );
 
             let total = 0;
@@ -124,7 +122,9 @@
                 playerInfo[d.id] = { name: data.name, role: data.role };
               });
 
-              const lockedEvents = eventsSnap.docs.filter((d) => d.data().locked);
+              const lockedEvents = eventsSnap.docs.filter(
+                (d) => d.data().locked,
+              );
               const attendanceCounts = {};
               let totalAttendees = 0;
               const processedEvents = [];
@@ -144,9 +144,12 @@
                           : ref.id
                         : ref;
                     }
-                    if (typeof pRef === "string") pRef = doc(db, "players", pRef);
+                    if (typeof pRef === "string")
+                      pRef = doc(db, "players", pRef);
                     const pSnap = await getDoc(pRef);
-                    const name = pSnap.exists() ? pSnap.data().name : "[Unknown]";
+                    const name = pSnap.exists()
+                      ? pSnap.data().name
+                      : "[Unknown]";
                     attendees.push({ name, earnings });
                     attendanceCounts[name] = (attendanceCounts[name] || 0) + 1;
                     totalAttendees++;
@@ -184,7 +187,9 @@
               };
 
               const comparator = (a, b) =>
-                b.count !== a.count ? b.count - a.count : a.name.localeCompare(b.name);
+                b.count !== a.count
+                  ? b.count - a.count
+                  : a.name.localeCompare(b.name);
 
               const corePlayers = players
                 .filter((p) => p.role === "core")
@@ -217,7 +222,8 @@
               const rect = chartRoot.getBoundingClientRect();
               console.log("chart container rect:", rect);
               if (rect.height === 0) {
-                if (msgEl) msgEl.textContent = "Chart container has zero height";
+                if (msgEl)
+                  msgEl.textContent = "Chart container has zero height";
                 return;
               }
 
@@ -257,10 +263,10 @@
               populateSelect(sel1);
               populateSelect(sel2);
               sel1.addEventListener("change", () =>
-                renderStats(sel1.value, stats1)
+                renderStats(sel1.value, stats1),
               );
               sel2.addEventListener("change", () =>
-                renderStats(sel2.value, stats2)
+                renderStats(sel2.value, stats2),
               );
 
               if (chartData.length === 0) {
@@ -277,10 +283,15 @@
                   React.createElement(XAxis, { dataKey: "name" }),
                   React.createElement(YAxis, null),
                   React.createElement(Tooltip, null),
-                  React.createElement(Bar, { dataKey: "count", fill: "#00bcd4" })
-                )
+                  React.createElement(Bar, {
+                    dataKey: "count",
+                    fill: "#00bcd4",
+                  }),
+                ),
               );
-              ReactDOM.render(chartElement, chartRoot);
+              const root = createRoot(chartRoot);
+              root.render(chartElement);
+              console.log("Chart rendered");
               msgEl.textContent = "";
             } catch (err) {
               console.error("Failed to load analytics", err);
