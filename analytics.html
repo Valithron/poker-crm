@@ -214,14 +214,16 @@
                 .map(([name, count]) => {
                   const player = players.find((p) => p.name === name);
                   const firstName = player?.firstName || name.split(" ")[0];
-                  return {
-                    name: firstName,
-                    count,
-                    isCore: player?.role === "core",
-                  };
+                  return { name: firstName, count };
                 })
-                .filter((entry) => !entry.isCore)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .filter((entry) => {
+                  const isCore = corePlayers.some((p) => p.firstName === entry.name);
+                  return !isCore;
+                })
+                .sort((a, b) => {
+                  if (b.count !== a.count) return b.count - a.count;
+                  return a.name.localeCompare(b.name);
+                });
 
               console.log("chartData:", chartData);
 
