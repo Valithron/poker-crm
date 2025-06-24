@@ -138,32 +138,9 @@
                 };
               });
 
-              const lockedEvents = eventsSnap.docs.filter(
-                (d) => d.data().locked,
-              );
+              const lockedEvents = eventsSnap.docs.filter((d) => d.data().locked);
               const attendanceCounts = {};
               let totalAttendees = 0;
-
-              for (const docSnap of lockedEvents) {
-                const data = docSnap.data();
-                for (const ref of data.attended || []) {
-                  try {
-                    let pRef = ref;
-                    if (typeof ref === "object" && ref.id) {
-                      pRef = typeof ref.id === "string"
-                        ? doc(db, "players", ref.id)
-                        : ref.id;
-                    }
-                    if (typeof pRef === "string") pRef = doc(db, "players", pRef);
-                    const pSnap = await getDoc(pRef);
-                    const name = pSnap.exists() ? pSnap.data().name : "[Unknown]";
-                    attendanceCounts[name] = (attendanceCounts[name] || 0) + 1;
-                    totalAttendees++;
-                  } catch {
-                    // ignore
-                  }
-                }
-              }
 
               const totalEvents = lockedEvents.length;
               const averageAttendance =
@@ -174,11 +151,18 @@
                 averageAttendance;
 
               const players = Object.values(playerInfo).map((p) => ({
+                id: p.id, // Add player ID
                 name: p.name,
                 firstName: p.firstName,
                 role: p.role,
                 count: attendanceCounts[p.name] || 0,
               }));
+
+              // Calculate attendance counts from player earningsHistory
+              Object.values(playerInfo).forEach(player => {
+                attendanceCounts[player.name] = (player.earningsHistory || []).length;
+                totalAttendees += (player.earningsHistory || []).length;
+              });
 
               const nameMap = {
                 "Adam Oliver": "Adam",
@@ -203,7 +187,7 @@
               corePlayers.forEach((p) => {
                 const div = document.createElement("div");
                 div.className = "core-member";
-                const displayName = nameMap[p.name] || p.name;
+                const displayName = nameMap[p.name] || p.firstName || p.name; // Use firstName if available
                 div.innerHTML = `<span>${displayName}</span><span class="badge">${p.count}</span>`;
                 coreContainer.appendChild(div);
               });
@@ -211,7 +195,7 @@
               const chartData = Object.entries(attendanceCounts)
                 .map(([name, count]) => {
                   const player = players.find((p) => p.name === name);
-                  const firstName = player?.firstName || name.split(" ")[0];
+                  const firstName = player?.firstName || name.split(" ")[0]; // Use firstName if available
                   return { name: firstName, count };
                 })
                 .filter((entry) => {
