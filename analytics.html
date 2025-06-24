@@ -79,33 +79,49 @@
           const db = getFirestore(app);
 
           function getPlayerEarningsStats(playerName, allEvents) {
-            const relevant = allEvents.filter((ev) =>
-              ev.attendees.some((p) => p.name === playerName),
+            const attended = allEvents
+              .filter((ev) => ev.attendees.some((p) => p.name === playerName))
+              .map((ev) => {
+                const person = ev.attendees.find((x) => x.name === playerName);
+                return {
+                  date: ev.date,
+                  earnings:
+                    typeof person.earnings === "number"
+                      ? person.earnings
+                      : null,
+                };
+              });
+
+            // Sort by event date
+            attended.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            const cleanEvents = attended.filter(
+              (e) => typeof e.earnings === "number",
             );
 
             let total = 0;
             let wins = 0;
             let losses = 0;
-            const earningsOverTime = [];
 
-            for (const ev of relevant) {
-              const p = ev.attendees.find((x) => x.name === playerName);
-              const e = Number(p.earnings || 0);
-              total += e;
-              earningsOverTime.push({ date: ev.date, earnings: e });
-              if (e > 0) wins++;
-              else if (e < 0) losses++;
+            for (const e of cleanEvents) {
+              total += e.earnings;
+              if (e.earnings > 0) wins++;
+              else if (e.earnings < 0) losses++;
             }
 
-            const avg = relevant.length > 0 ? total / relevant.length : 0;
+            const average =
+              cleanEvents.length > 0 ? total / cleanEvents.length : undefined;
 
             return {
-              totalEarnings: total.toFixed(2),
+              totalEarnings: cleanEvents.length ? total.toFixed(2) : "N/A",
               wins,
               losses,
-              average: avg.toFixed(2),
-              lastEvent: earningsOverTime.at(-1)?.earnings || 0,
-              earningsOverTime,
+              average: typeof average === "number" ? average.toFixed(2) : "N/A",
+              lastEvent:
+                attended.length > 0 &&
+                typeof attended[attended.length - 1].earnings === "number"
+                  ? attended[attended.length - 1].earnings.toFixed(2)
+                  : "N/A",
             };
           }
 
@@ -217,7 +233,9 @@
                   return { name: firstName, count };
                 })
                 .filter((entry) => {
-                  const isCore = corePlayers.some((p) => p.firstName === entry.name);
+                  const isCore = corePlayers.some(
+                    (p) => p.firstName === entry.name,
+                  );
                   return !isCore;
                 })
                 .sort((a, b) => {
@@ -267,12 +285,19 @@
               function renderStats(name, container) {
                 if (!name) return (container.innerHTML = "");
                 const stats = getPlayerEarningsStats(name, processedEvents);
-                const last = Number(stats.lastEvent).toFixed(2);
                 container.innerHTML = `
-                  <p><strong>Total:</strong> ${stats.totalEarnings}</p>
+                  <p><strong>Total:</strong> ${
+                    stats.totalEarnings !== "N/A" ? stats.totalEarnings : "N/A"
+                  }</p>
                   <p><strong>Wins:</strong> ${stats.wins} / <strong>Losses:</strong> ${stats.losses}</p>
-                  <p><strong>Avg/Event:</strong> ${stats.average}</p>
-                  <p><strong>Last Event:</strong> ${last >= 0 ? "+" : ""}${last}</p>
+                  <p><strong>Avg/Event:</strong> ${
+                    stats.average !== "N/A" ? stats.average : "N/A"
+                  }</p>
+                  <p><strong>Last Event:</strong> ${
+                    stats.lastEvent !== "N/A"
+                      ? (stats.lastEvent >= 0 ? "+" : "") + stats.lastEvent
+                      : "N/A"
+                  }</p>
                 `;
               }
 
