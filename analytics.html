@@ -119,7 +119,11 @@
               const playerInfo = {};
               playersSnap.forEach((d) => {
                 const data = d.data();
-                playerInfo[d.id] = { name: data.name, role: data.role };
+                playerInfo[d.id] = {
+                  name: data.name,
+                  firstName: data.firstName || (data.name || "").split(" ")[0],
+                  role: data.role,
+                };
               });
 
               const lockedEvents = eventsSnap.docs.filter(
@@ -173,6 +177,7 @@
 
               const players = Object.values(playerInfo).map((p) => ({
                 name: p.name,
+                firstName: p.firstName,
                 role: p.role,
                 count: attendanceCounts[p.name] || 0,
               }));
@@ -206,11 +211,16 @@
               });
 
               const chartData = Object.entries(attendanceCounts)
-                .filter(([name]) => {
+                .map(([name, count]) => {
                   const player = players.find((p) => p.name === name);
-                  return !player || player.role !== "core";
+                  const firstName = player?.firstName || name.split(" ")[0];
+                  return {
+                    name: firstName,
+                    count,
+                    isCore: player?.role === "core",
+                  };
                 })
-                .map(([name, count]) => ({ name, count }))
+                .filter((entry) => !entry.isCore)
                 .sort((a, b) => a.name.localeCompare(b.name));
 
               console.log("chartData:", chartData);
@@ -289,6 +299,7 @@
                     angle: 45,
                     textAnchor: "start",
                     interval: 0,
+                    height: 60,
                   }),
                   React.createElement(YAxis, null),
                   React.createElement(Tooltip, null),
