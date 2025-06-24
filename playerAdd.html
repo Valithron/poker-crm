@@ -8,44 +8,36 @@
   </head>
   <body>
     <div id="navbar-placeholder"></div>
-    <main class="page-content">
-      <div class="container">
-        <div class="page-header mobile-offset">
-          <h1 class="page-title">Add a New Player</h1>
-        </div>
-        <form id="playerForm">
-          <input
-            type="text"
-            id="name"
-            name="name"
-            autocomplete="name"
-            placeholder="Full Name"
-            required
-          /><br />
-          <input
-            type="email"
-            id="email"
-            name="email"
-            autocomplete="email"
-            placeholder="Email"
-          /><br />
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            autocomplete="tel"
-            placeholder="Phone"
-          /><br />
-          <input
-            type="text"
-            id="invitedBy"
-            name="invitedBy"
-            autocomplete="off"
-            placeholder="Invited By"
-          /><br />
-          <button type="submit">Add Player</button>
-        </form>
-      </div>
+    <main
+      style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        min-height: 100vh;
+      "
+    >
+      <form
+        id="playerForm"
+        style="
+          background-color: #eef3ec;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          max-width: 400px;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        "
+      >
+        <h2 style="text-align: center; color: #004400;">Add a New Player</h2>
+        <input type="text" id="name" placeholder="Full Name" required />
+        <input type="email" id="email" placeholder="Email" />
+        <input type="tel" id="phone" placeholder="Phone" />
+        <input type="text" id="invitedBy" placeholder="Invited By" />
+        <button type="submit">Add Player</button>
+      </form>
     </main>
 
     <script type="module">
@@ -76,17 +68,21 @@
         const name = document.getElementById("name").value.trim();
         const email = document.getElementById("email").value.trim();
         const phone = document.getElementById("phone").value.trim();
-        const role = "guest";
         const invitedBy = document.getElementById("invitedBy").value.trim();
+        const role = "guest";
+
+        if (!name) return alert("Full name is required.");
+
+        const firstName = name.split(" ")[0];
 
         try {
           await addDoc(collection(db, "players"), {
             name,
+            firstName,
             email,
             phone,
-            role,
             invitedBy,
-            attendance: [], // Start with empty array
+            role,
           });
           alert("Player added!");
           form.reset();
