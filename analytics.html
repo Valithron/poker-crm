@@ -206,6 +206,10 @@
               });
 
               const chartData = Object.entries(attendanceCounts)
+                .filter(([name]) => {
+                  const player = players.find((p) => p.name === name);
+                  return !player || player.role !== "core";
+                })
                 .map(([name, count]) => ({ name, count }))
                 .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -282,8 +286,8 @@
                   { data: chartData },
                   React.createElement(XAxis, {
                     dataKey: "name",
-                    angle: -45,
-                    textAnchor: "end",
+                    angle: 45,
+                    textAnchor: "start",
                     interval: 0,
                   }),
                   React.createElement(YAxis, null),
