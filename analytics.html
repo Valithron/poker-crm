@@ -78,8 +78,14 @@
           const app = initializeApp(firebaseConfig);
           const db = getFirestore(app);
 
+          function filterValidEarnings(history) {
+            return (history || []).filter(
+              (e) => typeof e.amount === "number" && e.amount !== 100,
+            );
+          }
+
           function getPlayerEarningsStats(playerDoc) {
-            const history = playerDoc.earningsHistory || [];
+            const history = filterValidEarnings(playerDoc.earningsHistory);
             if (!history.length)
               return {
                 totalEarnings: "N/A",
@@ -100,7 +106,6 @@
             );
 
             for (const { amount } of sorted) {
-              if (typeof amount !== "number") continue;
               total += amount;
               earningsOverTime.push({ earnings: amount });
               if (amount > 0) wins++;

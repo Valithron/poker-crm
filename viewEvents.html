@@ -114,8 +114,16 @@
           .join("")}</ul></div>
         <div class="attendees"><strong>Attended:</strong><ul>${ev.attended
           .map(
-            (p) =>
-              `<li>${p.name}${p.earnings !== undefined ? " " + "(" + (p.earnings >= 0 ? "+" : "") + Number(p.earnings).toFixed(2) + ")" : ""}</li>`,
+            (p) => {
+              const val = Number(p.earnings);
+              let display = "";
+              if (p.earnings !== undefined) {
+                display = val === 100
+                  ? " (NA)"
+                  : ` (${val >= 0 ? "+" : ""}${val.toFixed(2)})`;
+              }
+              return `<li>${p.name}${display}</li>`;
+            },
           )
           .join("")}</ul></div>
       `;
