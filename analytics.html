@@ -64,36 +64,38 @@
               "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
             );
 
-          function filterValidEarnings(history) {
-            return (history || []).filter(
-              (e) => typeof e.amount === "number" && e.amount !== 100,
+          function getAttendanceCount(player) {
+            return player.earningsHistory?.length || 0;
+          }
+
+          function getValidEarnings(player) {
+            return (player.earningsHistory || []).filter(
+              (entry) => typeof entry.amount === "number" && entry.amount !== 100,
             );
           }
 
-          function getValidAttendanceCount(player) {
-            return filterValidEarnings(player?.earningsHistory).length;
-          }
-
-          function getMostRecentValidEarning(playerDoc, eventsMap) {
-            const valid = filterValidEarnings(playerDoc.earningsHistory)
+          function getLastValidEarning(player, eventsMap) {
+            const valid = getValidEarnings(player)
               .map((e) => ({
                 amount: e.amount,
                 date: eventsMap[e.eventId]?.date,
               }))
-              .filter((e) => e.date instanceof Date);
+              .filter((e) => e.date instanceof Date)
+              .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            valid.sort((a, b) => b.date - a.date);
             return valid[0]?.amount ?? null;
           }
 
           function getPlayerEarningsStats(playerDoc, eventsMap) {
-            const history = filterValidEarnings(playerDoc.earningsHistory)
+            const history = getValidEarnings(playerDoc)
               .map((e) => ({
                 amount: e.amount,
                 date: eventsMap[e.eventId]?.date,
               }))
               .filter((e) => e.date instanceof Date)
               .sort((a, b) => a.date - b.date);
+
+            const attendance = getAttendanceCount(playerDoc);
 
             if (!history.length)
               return {
@@ -103,7 +105,7 @@
                 average: "N/A",
                 lastEvent: "N/A",
                 earningsOverTime: [],
-                attendanceCount: getValidAttendanceCount(playerDoc),
+                attendanceCount: attendance,
               };
 
             let total = 0;
@@ -119,7 +121,7 @@
             }
 
             const average = total / earningsOverTime.length;
-            const last = getMostRecentValidEarning(playerDoc, eventsMap);
+            const last = getLastValidEarning(playerDoc, eventsMap);
 
             return {
               totalEarnings: total.toFixed(2),
@@ -128,7 +130,7 @@
               average: average.toFixed(2),
               lastEvent: last !== null ? last.toFixed(2) : "N/A",
               earningsOverTime,
-              attendanceCount: getValidAttendanceCount(playerDoc),
+              attendanceCount: attendance,
             };
           }
 
@@ -166,7 +168,7 @@
               let totalAttendees = 0;
 
               Object.values(playerInfo).forEach((player) => {
-                const count = getValidAttendanceCount(player);
+                const count = getAttendanceCount(player);
                 attendanceCounts[player.id] = count;
                 totalAttendees += count;
               });
