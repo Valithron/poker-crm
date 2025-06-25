@@ -3,82 +3,397 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BroTime CRM - Add Player</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="styles.css?v=3" />
   </head>
   <body>
     <div id="navbar-placeholder"></div>
-    <main
-      style="
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 2rem;
-        min-height: 100vh;
-      "
-    >
-      <form
-        id="playerForm"
-        style="
-          background-color: #eef3ec;
-          padding: 2rem;
-          border-radius: 8px;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-          max-width: 400px;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        "
-      >
-        <h2 style="text-align: center; color: #004400;">Add a New Player</h2>
-        <input type="text" id="name" placeholder="Full Name" required />
-        <input type="email" id="email" placeholder="Email" />
-        <input type="tel" id="phone" placeholder="Phone" />
-        <input type="text" id="invitedBy" placeholder="Invited By" />
-        <button type="submit">Add Player</button>
-      </form>
+    <main class="page-content">
+      <div class="container">
+        <div class="page-header mobile-offset">
+          <h1 class="page-title">⚙️ Admin Dashboard</h1>
+        </div>
+        <section id="statsSection" class="stats">
+          <div class="stat">
+            <strong id="statPlayers">0</strong><br />Players
+          </div>
+          <div class="stat"><strong id="statEvents">0</strong><br />Events</div>
+          <div class="stat">
+            <strong id="statEarnings">0</strong><br />Total Earnings
+          </div>
+          <div class="stat">
+            <strong id="statUpdated">—</strong><br />Last Update
+          </div>
+        </section>
+
+        <section id="playersSection" class="section">
+          <h2>Players</h2>
+          <form id="addPlayerForm" class="form-card">
+            <input
+              type="text"
+              id="pFirstName"
+              placeholder="First Name"
+              required
+            />
+            <input type="email" id="pEmail" placeholder="Email" required />
+            <input type="text" id="pInvited" placeholder="Invited By" />
+            <button type="submit">Add Player</button>
+          </form>
+          <div id="playersList"></div>
+        </section>
+
+        <section id="eventsSection" class="section">
+          <h2>Events</h2>
+          <form id="addEventForm" class="form-card">
+            <input type="date" id="eDate" required />
+            <input type="text" id="eNotes" placeholder="Notes" />
+            <select id="eAttendees" multiple></select>
+            <button type="submit">Add Event</button>
+          </form>
+          <div id="eventsList"></div>
+        </section>
+
+        <section id="earningsSection" class="section">
+          <h2>Earnings Adjustment</h2>
+          <select id="earningsPlayer"></select>
+          <table id="earningsTable" style="width: 100%; margin-top: 0.5rem">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Date</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <form id="addEarningForm" class="form-card">
+            <select id="earningEvent"></select>
+            <input
+              type="number"
+              step="0.01"
+              id="earningAmount"
+              placeholder="Amount"
+              required
+            />
+            <button type="submit">Add Entry</button>
+          </form>
+        </section>
+      </div>
     </main>
 
+    <script src="loadNav.js"></script>
     <script type="module">
       import { app, db } from "./firebaseInit.js";
       import {
         collection,
+        getDocs,
         addDoc,
+        updateDoc,
+        deleteDoc,
+        doc,
+        Timestamp,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      const form = document.getElementById("playerForm");
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
+      const statsPlayers = document.getElementById("statPlayers");
+      const statsEvents = document.getElementById("statEvents");
+      const statsEarnings = document.getElementById("statEarnings");
+      const statsUpdated = document.getElementById("statUpdated");
 
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const phone = document.getElementById("phone").value.trim();
-        const invitedBy = document.getElementById("invitedBy").value.trim();
-        const role = "guest";
+      const playersList = document.getElementById("playersList");
+      const eventsList = document.getElementById("eventsList");
+      const attendeesSelect = document.getElementById("eAttendees");
+      const earningsPlayerSelect = document.getElementById("earningsPlayer");
+      const earningEventSelect = document.getElementById("earningEvent");
+      const earningsTableBody = document.querySelector("#earningsTable tbody");
 
-        if (!name) return alert("Full name is required.");
+      let players = [];
+      let events = [];
 
-        const firstName = name.split(" ")[0];
+      function formatDate(ts) {
+        const d = ts?.toDate ? ts.toDate() : new Date(ts);
+        return d.toISOString().split("T")[0];
+      }
 
-        try {
-          await addDoc(collection(db, "players"), {
-            name,
-            firstName,
-            email,
-            phone,
-            invitedBy,
-            role,
+      function updateStats() {
+        statsPlayers.textContent = players.length;
+        statsEvents.textContent = events.length;
+        let total = 0;
+        players.forEach((p) => {
+          (p.earningsHistory || []).forEach((e) => {
+            if (typeof e.amount === "number" && e.amount !== 100) {
+              total += e.amount;
+            }
           });
-          alert("Player added!");
-          form.reset();
-        } catch (error) {
-          console.error("Error adding document: ", error);
-          alert("Something went wrong.");
+        });
+        statsEarnings.textContent = total.toFixed(2);
+        statsUpdated.textContent = new Date().toLocaleString();
+      }
+
+      function renderPlayers() {
+        playersList.innerHTML = "";
+        attendeesSelect.innerHTML = "";
+        earningsPlayerSelect.innerHTML =
+          '<option value="">Select player</option>';
+        players
+          .sort((a, b) => a.firstName.localeCompare(b.firstName))
+          .forEach((p) => {
+            const card = document.createElement("div");
+            card.className = "player-card";
+            card.innerHTML = `
+            <strong>${p.firstName}</strong>
+            <span>${p.email || ""}</span>
+            <span>Invited by: ${p.invitedBy || "-"}</span>
+            <span>Attendance: ${(p.earningsHistory || []).length}</span>
+            <button data-id="${p.id}" class="edit-player">Edit</button>
+            <button data-id="${p.id}" class="delete-player">Delete</button>
+          `;
+            playersList.appendChild(card);
+
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.firstName;
+            attendeesSelect.appendChild(opt.cloneNode(true));
+            earningsPlayerSelect.appendChild(opt);
+          });
+      }
+
+      function renderEvents() {
+        eventsList.innerHTML = "";
+        earningEventSelect.innerHTML = "";
+        events
+          .sort((a, b) => {
+            const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+            const db = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+            return db - da;
+          })
+          .forEach((ev) => {
+            const div = document.createElement("div");
+            div.className = "event-card";
+            div.innerHTML = `
+            <h3>${formatDate(ev.date)}</h3>
+            <p>Attendees: ${(ev.attendees || []).length}</p>
+            <button data-id="${ev.id}" class="edit-event">Edit</button>
+            <button data-id="${ev.id}" class="delete-event">Delete</button>`;
+            eventsList.appendChild(div);
+
+            const opt = document.createElement("option");
+            opt.value = ev.id;
+            opt.textContent = formatDate(ev.date);
+            earningEventSelect.appendChild(opt);
+          });
+      }
+
+      function renderEarnings(playerId) {
+        earningsTableBody.innerHTML = "";
+        const player = players.find((p) => p.id === playerId);
+        if (!player) return;
+        (player.earningsHistory || []).forEach((entry, idx) => {
+          const ev = events.find((e) => e.id === entry.eventId);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${ev ? formatDate(ev.date) : entry.eventId}</td>
+            <td>${ev ? formatDate(ev.date) : "-"}</td>
+            <td><input type="number" step="0.01" value="${entry.amount}" data-index="${idx}" class="earn-input"></td>
+            <td><button data-index="${idx}" class="delete-earn">Delete</button></td>
+          `;
+          earningsTableBody.appendChild(tr);
+        });
+      }
+
+      async function loadData() {
+        const [pSnap, eSnap] = await Promise.all([
+          getDocs(collection(db, "players")),
+          getDocs(collection(db, "events")),
+        ]);
+        players = pSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        events = eSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        updateStats();
+        renderPlayers();
+        renderEvents();
+      }
+
+      document
+        .getElementById("addPlayerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const firstName = document.getElementById("pFirstName").value.trim();
+          const email = document
+            .getElementById("pEmail")
+            .value.trim()
+            .toLowerCase();
+          const invitedBy = document.getElementById("pInvited").value.trim();
+          try {
+            const docRef = await addDoc(collection(db, "players"), {
+              firstName,
+              email,
+              invitedBy,
+              earningsHistory: [],
+            });
+            players.push({
+              id: docRef.id,
+              firstName,
+              email,
+              invitedBy,
+              earningsHistory: [],
+            });
+            renderPlayers();
+            updateStats();
+            e.target.reset();
+          } catch (err) {
+            console.error(err);
+            alert("Failed to add player");
+          }
+        });
+
+      document
+        .getElementById("playersList")
+        .addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          if (e.target.classList.contains("delete-player")) {
+            if (!confirm("Delete player?")) return;
+            await deleteDoc(doc(db, "players", id));
+            players = players.filter((p) => p.id !== id);
+            renderPlayers();
+            updateStats();
+          } else if (e.target.classList.contains("edit-player")) {
+            const p = players.find((x) => x.id === id);
+            const firstName = prompt("First Name", p.firstName) || p.firstName;
+            const email = prompt("Email", p.email) || p.email;
+            const invitedBy = prompt("Invited By", p.invitedBy || "") || "";
+            await updateDoc(doc(db, "players", id), {
+              firstName,
+              email: email.toLowerCase(),
+              invitedBy,
+            });
+            Object.assign(p, { firstName, email, invitedBy });
+            renderPlayers();
+            updateStats();
+          }
+        });
+
+      document
+        .getElementById("addEventForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const date = document.getElementById("eDate").value;
+          const notes = document.getElementById("eNotes").value.trim();
+          const attendees = Array.from(attendeesSelect.selectedOptions).map(
+            (o) => o.value,
+          );
+          try {
+            const docRef = await addDoc(collection(db, "events"), {
+              date: Timestamp.fromDate(new Date(date)),
+              notes,
+              attendees,
+            });
+            events.push({
+              id: docRef.id,
+              date: Timestamp.fromDate(new Date(date)),
+              notes,
+              attendees,
+            });
+            renderEvents();
+            updateStats();
+            e.target.reset();
+          } catch (err) {
+            console.error(err);
+            alert("Failed to add event");
+          }
+        });
+
+      document
+        .getElementById("eventsList")
+        .addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          if (e.target.classList.contains("delete-event")) {
+            if (!confirm("Delete event?")) return;
+            await deleteDoc(doc(db, "events", id));
+            events = events.filter((ev) => ev.id !== id);
+            renderEvents();
+            updateStats();
+          } else if (e.target.classList.contains("edit-event")) {
+            const ev = events.find((ev) => ev.id === id);
+            const date =
+              prompt("Date (YYYY-MM-DD)", formatDate(ev.date)) ||
+              formatDate(ev.date);
+            const notes = prompt("Notes", ev.notes || "") || "";
+            await updateDoc(doc(db, "events", id), {
+              date: Timestamp.fromDate(new Date(date)),
+              notes,
+            });
+            Object.assign(ev, {
+              date: Timestamp.fromDate(new Date(date)),
+              notes,
+            });
+            renderEvents();
+            updateStats();
+          }
+        });
+
+      earningsPlayerSelect.addEventListener("change", (e) => {
+        renderEarnings(e.target.value);
+      });
+
+      earningsTableBody.addEventListener("input", async (e) => {
+        if (e.target.classList.contains("earn-input")) {
+          const idx = Number(e.target.dataset.index);
+          const playerId = earningsPlayerSelect.value;
+          const player = players.find((p) => p.id === playerId);
+          if (!player) return;
+          player.earningsHistory[idx].amount = Number(e.target.value);
+          await updateDoc(doc(db, "players", playerId), {
+            earningsHistory: player.earningsHistory,
+          });
+          updateStats();
         }
       });
+
+      earningsTableBody.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("delete-earn")) {
+          const idx = Number(e.target.dataset.index);
+          const playerId = earningsPlayerSelect.value;
+          const player = players.find((p) => p.id === playerId);
+          if (!player) return;
+          if (!confirm("Delete entry?")) return;
+          player.earningsHistory.splice(idx, 1);
+          await updateDoc(doc(db, "players", playerId), {
+            earningsHistory: player.earningsHistory,
+          });
+          renderEarnings(playerId);
+          updateStats();
+        }
+      });
+
+      document
+        .getElementById("addEarningForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const playerId = earningsPlayerSelect.value;
+          if (!playerId) return;
+          const eventId = earningEventSelect.value;
+          const amount = Number(document.getElementById("earningAmount").value);
+          const player = players.find((p) => p.id === playerId);
+          if (!player) return;
+          const existing = player.earningsHistory.find(
+            (eh) => eh.eventId === eventId,
+          );
+          if (existing && !confirm("Overwrite existing entry?")) return;
+          if (existing) {
+            existing.amount = amount;
+          } else {
+            player.earningsHistory.push({ eventId, amount });
+          }
+          await updateDoc(doc(db, "players", playerId), {
+            earningsHistory: player.earningsHistory,
+          });
+          renderEarnings(playerId);
+          updateStats();
+          e.target.reset();
+        });
+
+      await loadData();
     </script>
-    <script src="loadNav.js"></script>
     <script type="module">
       import { authCheck } from "./authGuard.js";
       authCheck();
