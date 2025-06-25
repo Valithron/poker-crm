@@ -240,36 +240,6 @@ button {
   gap: 1rem;
 }
 
-/* Players table */
-.players-table-wrapper {
-  overflow-x: auto;
-}
-
-#playersTable {
-  width: 100%;
-  min-width: 480px;
-  border-collapse: collapse;
-  background: #ffffff;
-  color: #222;
-}
-
-#playersTable th,
-#playersTable td {
-  padding: 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid #ccc;
-}
-
-#playersTable th {
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-}
-
-.sort-indicator {
-  margin-left: 4px;
-}
-
 .player-card {
   display: flex;
   justify-content: space-between;
@@ -581,19 +551,6 @@ button {
   .players-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
-  }
-
-  #playersTable th,
-  #playersTable td {
-    font-size: 0.9rem;
-    padding: 0.4rem;
-  }
-
-  .edit-btn,
-  .delete-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 0.9rem;
   }
 
   .event {
