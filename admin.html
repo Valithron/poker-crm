@@ -71,7 +71,9 @@
           <h2>Events</h2>
           <form id="addEventForm" class="form-card">
             <input type="date" id="eDate" required />
+            <select id="eHost"></select>
             <input type="text" id="eNotes" placeholder="Notes" />
+            <select id="eInvited" multiple></select>
             <select id="eAttendees" multiple></select>
             <button type="submit">Add Event</button>
           </form>
@@ -84,6 +86,9 @@
                   </th>
                   <th data-field="attendees">
                     Attendees <span class="sort-indicator"></span>
+                  </th>
+                  <th data-field="host">
+                    Host <span class="sort-indicator"></span>
                   </th>
                   <th data-field="notes">
                     Notes <span class="sort-indicator"></span>
@@ -102,8 +107,16 @@
                   <input type="date" id="modalDate" required />
                 </label>
                 <label>
+                  Host
+                  <select id="modalHost"></select>
+                </label>
+                <label>
                   Notes
                   <input type="text" id="modalNotes" />
+                </label>
+                <label>
+                  Invited
+                  <select id="modalInvited" multiple></select>
                 </label>
                 <label>
                   Attendees
@@ -175,10 +188,14 @@
       const eventEditModal = document.getElementById("eventEditModal");
       const eventEditForm = document.getElementById("eventEditForm");
       const modalDate = document.getElementById("modalDate");
+      const modalHost = document.getElementById("modalHost");
       const modalNotes = document.getElementById("modalNotes");
+      const modalInvited = document.getElementById("modalInvited");
       const modalAttendees = document.getElementById("modalAttendees");
       const modalAddBlank = document.getElementById("modalAddBlank");
       const modalClose = document.getElementById("modalClose");
+      const hostSelect = document.getElementById("eHost");
+      const invitedSelect = document.getElementById("eInvited");
       const attendeesSelect = document.getElementById("eAttendees");
       const earningsPlayerSelect = document.getElementById("earningsPlayer");
       const earningEventSelect = document.getElementById("earningEvent");
@@ -232,6 +249,8 @@
 
       function renderTable() {
         playersTableBody.innerHTML = "";
+        hostSelect.innerHTML = "";
+        invitedSelect.innerHTML = "";
         attendeesSelect.innerHTML = "";
         earningsPlayerSelect.innerHTML =
           '<option value="">Select player</option>';
@@ -253,6 +272,8 @@
           opt.value = p.id;
           opt.textContent = getFullName(p);
           attendeesSelect.appendChild(opt.cloneNode(true));
+          invitedSelect.appendChild(opt.cloneNode(true));
+          hostSelect.appendChild(opt.cloneNode(true));
           earningsPlayerSelect.appendChild(opt);
         });
       }
@@ -411,6 +432,7 @@
             ev.date
           )}</td>
             <td>${(ev.attendees || []).length}</td>
+            <td>${ev.host || ""}</td>
             <td class="notes-cell" title="${ev.notes || ""}">${truncate(
             ev.notes
           )}</td>
@@ -446,6 +468,10 @@
               aVal = (a.notes || "").toLowerCase();
               bVal = (b.notes || "").toLowerCase();
               break;
+            case "host":
+              aVal = (a.host || "").toLowerCase();
+              bVal = (b.host || "").toLowerCase();
+              break;
             case "date":
             default:
               aVal = a.date?.toDate ? a.date.toDate() : new Date(a.date);
@@ -472,7 +498,7 @@
         const tr = document.createElement("tr");
         tr.className = "expand-row";
         const td = document.createElement("td");
-        td.colSpan = 4;
+        td.colSpan = 5;
         const names = (ev.attendees || [])
           .map((id) => {
             const p = players.find((pl) => pl.id === id);
@@ -485,6 +511,8 @@
         if (btn) btn.textContent = "▼";
       }
 
+      let hostChoice;
+      let invitedChoices;
       let attendeeChoices;
 
       function openEventModal(ev) {
@@ -492,6 +520,39 @@
         modalDate.value = formatDate(ev.date);
         modalNotes.value = ev.notes || "";
         modalAddBlank.checked = false;
+
+        if (hostChoice) {
+          hostChoice.destroy();
+          hostChoice = null;
+        }
+        modalHost.innerHTML = "";
+        players.forEach((p) => {
+          const name = getFullName(p);
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          opt.selected = ev.host === name;
+          modalHost.appendChild(opt);
+        });
+        hostChoice = new Choices(modalHost, { shouldSort: false });
+
+        if (invitedChoices) {
+          invitedChoices.destroy();
+          invitedChoices = null;
+        }
+        modalInvited.innerHTML = "";
+        players.forEach((p) => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = getFullName(p);
+          opt.selected = (ev.invited || []).includes(p.id);
+          modalInvited.appendChild(opt);
+        });
+        invitedChoices = new Choices(modalInvited, {
+          removeItemButton: true,
+          shouldSort: false,
+        });
+
         if (attendeeChoices) {
           attendeeChoices.destroy();
           attendeeChoices = null;
@@ -517,15 +578,21 @@
           e.preventDefault();
           const newDate = modalDate.value;
           const newNotes = modalNotes.value.trim();
+          const newHost = hostChoice.getValue(true);
+          const invitedIds = invitedChoices.getValue(true);
           const attendeeIds = attendeeChoices.getValue(true);
           await updateDoc(doc(db, "events", ev.id), {
             date: Timestamp.fromDate(new Date(newDate)),
+            host: newHost,
             notes: newNotes,
+            invited: invitedIds,
             attendees: attendeeIds,
           });
           Object.assign(ev, {
             date: Timestamp.fromDate(new Date(newDate)),
+            host: newHost,
             notes: newNotes,
+            invited: invitedIds,
             attendees: attendeeIds,
           });
           if (modalAddBlank.checked) {
@@ -546,6 +613,14 @@
           }
           sortEvents(eventSortField, true);
           eventEditModal.style.display = "none";
+          if (hostChoice) {
+            hostChoice.destroy();
+            hostChoice = null;
+          }
+          if (invitedChoices) {
+            invitedChoices.destroy();
+            invitedChoices = null;
+          }
           if (attendeeChoices) {
             attendeeChoices.destroy();
             attendeeChoices = null;
@@ -669,20 +744,26 @@
         .addEventListener("submit", async (e) => {
           e.preventDefault();
           const date = document.getElementById("eDate").value;
+          const host = hostSelect.value;
           const notes = document.getElementById("eNotes").value.trim();
+          const invited = Array.from(invitedSelect.selectedOptions).map((o) => o.value);
           const attendees = Array.from(attendeesSelect.selectedOptions).map(
             (o) => o.value,
           );
           try {
             const docRef = await addDoc(collection(db, "events"), {
               date: Timestamp.fromDate(new Date(date)),
+              host,
               notes,
+              invited,
               attendees,
             });
             events.push({
               id: docRef.id,
               date: Timestamp.fromDate(new Date(date)),
+              host,
               notes,
+              invited,
               attendees,
             });
             sortEvents(eventSortField, true);
