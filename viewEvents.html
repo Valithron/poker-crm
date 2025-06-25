@@ -41,41 +41,32 @@
       const eventList = document.getElementById("eventList");
 
       async function fetchNames(ids) {
-        const names = [];
-        for (const id of ids || []) {
-          try {
-            const ref = typeof id === "string" ? doc(db, "players", id) : id;
-            const snap = await getDoc(ref);
-            names.push(snap.exists() ? snap.data().name : "[Unknown]");
-          } catch {
-            names.push("[Error]");
-          }
-        }
-        return names;
+        const fetches = (ids || []).map((id) => {
+          const ref = typeof id === "string" ? doc(db, "players", id) : id;
+          return getDoc(ref)
+            .then((snap) => (snap.exists() ? snap.data().name : "[Unknown]"))
+            .catch(() => "[Error]");
+        });
+        return Promise.all(fetches);
       }
 
       async function fetchAttendees(arr) {
-        const res = [];
-        for (const item of arr || []) {
-          try {
-            let ref = item;
-            let earnings;
-            if (typeof item === "object") {
-              earnings = item.earnings;
-              ref =
-                typeof item.id === "string"
-                  ? doc(db, "players", item.id)
-                  : item.id;
-            }
-            if (typeof ref === "string") ref = doc(db, "players", ref);
-            const snap = await getDoc(ref);
-            const name = snap.exists() ? snap.data().name : "[Unknown]";
-            res.push({ name, earnings });
-          } catch {
-            res.push({ name: "[Error]" });
+        const fetches = (arr || []).map((item) => {
+          let ref = item;
+          let earnings;
+          if (typeof item === "object") {
+            earnings = item.earnings;
+            ref = typeof item.id === "string" ? doc(db, "players", item.id) : item.id;
           }
-        }
-        return res;
+          if (typeof ref === "string") ref = doc(db, "players", ref);
+          return getDoc(ref)
+            .then((snap) => ({
+              name: snap.exists() ? snap.data().name : "[Unknown]",
+              earnings,
+            }))
+            .catch(() => ({ name: "[Error]", earnings }));
+        });
+        return Promise.all(fetches);
       }
 
       async function renderEvents() {
