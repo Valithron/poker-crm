@@ -6,6 +6,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { whitelist } from "./accessControl.js";
 
+const whitelistLower = whitelist.map((e) => e.toLowerCase());
+
 const firebaseConfig = {
   apiKey: "AIzaSyDqLxlBmdM_O1wmeOPPKyRh8PFnSw-dTH0",
   authDomain: "poker-crm.firebaseapp.com",
@@ -24,7 +26,7 @@ export function authCheck() {
       window.location.href = "login.html";
       return;
     }
-    if (!whitelist.includes(user.email)) {
+    if (!whitelistLower.includes(user.email.toLowerCase())) {
       await signOut(auth);
       alert("Access denied: Not an approved user.");
       window.location.href = "login.html";
