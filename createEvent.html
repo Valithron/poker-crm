@@ -304,25 +304,7 @@
         }
       });
     </script>
-    <script>
-      fetch("nav.html")
-        .then((res) => res.text())
-        .then((html) => {
-          document.getElementById("navbar-placeholder").innerHTML = html;
-
-          const hamburger = document.getElementById("hamburgerBtn");
-          const navLinks = document.getElementById("navLinks");
-          hamburger?.addEventListener("click", () => {
-            navLinks.classList.toggle("show");
-          });
-
-          document.addEventListener("click", (e) => {
-            if (!navLinks.contains(e.target) && !hamburger.contains(e.target)) {
-              navLinks.classList.remove("show");
-            }
-          });
-        });
-    </script>
+    <script src="loadNav.js"></script>
     <script type="module">
       import { authCheck } from "./authGuard.js";
       authCheck();
