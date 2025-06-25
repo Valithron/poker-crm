@@ -206,6 +206,15 @@
       let players = [];
       let events = [];
 
+      const coreNames = [
+        "adam",
+        "sterling",
+        "john",
+        "julian",
+        "nathan",
+        "isaiah",
+      ];
+
       function formatDate(ts) {
         const d = ts?.toDate ? ts.toDate() : new Date(ts);
         return d.toISOString().split("T")[0];
@@ -257,6 +266,16 @@
         players.forEach((p) => {
           const tr = document.createElement("tr");
           tr.dataset.id = p.id;
+
+          const firstName = (
+            p.firstName ||
+            (p.name ? p.name.split(" ")[0] : "")
+          ).toLowerCase();
+          if (coreNames.includes(firstName)) {
+            tr.classList.add("core-member-row");
+            tr.setAttribute("title", "Core BroTime Member");
+          }
+
           tr.innerHTML = `
             <td>${getFullName(p)}</td>
             <td>${(p.earningsHistory || []).length}</td>
