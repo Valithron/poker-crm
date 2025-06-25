@@ -270,6 +270,11 @@ button {
   margin-left: 4px;
 }
 
+/* Highlight for core members on admin page */
+#playersTable tr.core-member-row {
+  background-color: #fdf7e3;
+}
+
 .player-card {
   display: flex;
   justify-content: space-between;
