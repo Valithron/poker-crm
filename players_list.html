@@ -26,9 +26,6 @@
                 <th data-field="invitedBy">
                   Invited By <span class="sort-indicator"></span>
                 </th>
-                <th data-field="email">
-                  Email <span class="sort-indicator"></span>
-                </th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -81,7 +78,6 @@
             <td>${getFullName(p)}</td>
             <td>${(p.earningsHistory || []).length}</td>
             <td>${p.role !== "core" ? p.invitedBy || "—" : "—"}</td>
-            <td>${p.email || ""}</td>
             <td class="player-actions">
               <button data-id="${p.id}" class="edit-btn" title="Edit">&#9881;</button>
               <button data-id="${p.id}" class="delete-btn" title="Delete">&#10006;</button>
@@ -109,10 +105,6 @@
               aVal = a.role === "core" ? "" : a.invitedBy || "";
               bVal = b.role === "core" ? "" : b.invitedBy || "";
               break;
-            case "email":
-              aVal = a.email || "";
-              bVal = b.email || "";
-              break;
             case "name":
             default:
               aVal = getFullName(a).toLowerCase();
@@ -136,7 +128,7 @@
         const editRow = document.createElement("tr");
         editRow.className = "edit-row";
         editRow.innerHTML = `
-          <td colspan="5">
+          <td colspan="4">
             <form class="edit-form">
               <input name="firstName" type="text" value="${
                 player.firstName || getFullName(player)
