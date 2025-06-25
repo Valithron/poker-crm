@@ -13,173 +13,221 @@
         <div class="page-header mobile-offset">
           <h1 class="page-title">📇 Player Directory</h1>
         </div>
-        <div id="coreSection" class="section">
-          <div id="corePlayers" class="players-grid"></div>
-        </div>
-        <div id="otherSection" class="section">
-          <div id="otherPlayers" class="players-grid"></div>
+        <div class="players-table-wrapper">
+          <table id="playersTable">
+            <thead>
+              <tr>
+                <th data-field="name">
+                  Name <span class="sort-indicator"></span>
+                </th>
+                <th data-field="attendance">
+                  🎟 Attendance <span class="sort-indicator"></span>
+                </th>
+                <th data-field="invitedBy">
+                  Invited By <span class="sort-indicator"></span>
+                </th>
+                <th data-field="email">
+                  Email <span class="sort-indicator"></span>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="playersTableBody"></tbody>
+          </table>
         </div>
       </div>
     </main>
 
     <script type="module">
-      import { app, db } from "./firebaseInit.js";
+      import { db } from "./firebaseInit.js";
       import {
         collection,
         getDocs,
         updateDoc,
+        deleteDoc,
         doc,
       } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-      function sortContainer(container) {
-        const cards = Array.from(container.children);
-        cards.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
-        cards.forEach((c) => container.appendChild(c));
-      }
+      let players = [];
+      let sortField = "name";
+      let sortDirection = 1;
 
-      function refreshCard(card, player) {
-        const info = card.querySelector(".player-info");
-        info.innerHTML = `
-        <strong>${player.name}</strong>
-        <span>📧 ${player.email || "No email provided"}</span>
-        <span>📞 ${player.phone || "No phone"}</span>
-        <span>🏷️ ${player.role || "Unassigned"}</span>
-      `;
-        card.dataset.name = player.name.toLowerCase();
-
-        const coreContainer = document.getElementById("corePlayers");
-        const otherContainer = document.getElementById("otherPlayers");
-        const target = player.role === "core" ? coreContainer : otherContainer;
-        if (card.parentElement !== target) {
-          card.remove();
-          target.appendChild(card);
+      function getFullName(p) {
+        if (p.firstName) {
+          return p.firstName + (p.lastName ? ` ${p.lastName}` : "");
         }
-        sortContainer(target);
+        return p.name || "";
       }
 
-      function toggleEdit(card, player) {
-        let form = card.querySelector("form.edit-form");
-        if (form) {
-          form.remove();
+      function updateSortIndicators() {
+        document.querySelectorAll("#playersTable th").forEach((th) => {
+          const span = th.querySelector(".sort-indicator");
+          if (!span) return;
+          if (th.dataset.field === sortField) {
+            span.textContent = sortDirection === 1 ? "▲" : "▼";
+          } else {
+            span.textContent = "";
+          }
+        });
+      }
+
+      function renderTable() {
+        const tbody = document.getElementById("playersTableBody");
+        tbody.innerHTML = "";
+        players.forEach((p) => {
+          const tr = document.createElement("tr");
+          tr.dataset.id = p.id;
+          tr.innerHTML = `
+            <td>${getFullName(p)}</td>
+            <td>${(p.earningsHistory || []).length}</td>
+            <td>${p.role !== "core" ? p.invitedBy || "—" : "—"}</td>
+            <td>${p.email || ""}</td>
+            <td class="player-actions">
+              <button data-id="${p.id}" class="edit-btn" title="Edit">&#9881;</button>
+              <button data-id="${p.id}" class="delete-btn" title="Delete">&#10006;</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      function sortPlayers(field, initial = false) {
+        if (sortField === field && !initial) {
+          sortDirection *= -1;
+        } else {
+          sortField = field;
+          sortDirection = 1;
+        }
+        players.sort((a, b) => {
+          let aVal;
+          let bVal;
+          switch (field) {
+            case "attendance":
+              aVal = (a.earningsHistory || []).length;
+              bVal = (b.earningsHistory || []).length;
+              break;
+            case "invitedBy":
+              aVal = a.role === "core" ? "" : a.invitedBy || "";
+              bVal = b.role === "core" ? "" : b.invitedBy || "";
+              break;
+            case "email":
+              aVal = a.email || "";
+              bVal = b.email || "";
+              break;
+            case "name":
+            default:
+              aVal = getFullName(a).toLowerCase();
+              bVal = getFullName(b).toLowerCase();
+              break;
+          }
+          if (aVal < bVal) return -1 * sortDirection;
+          if (aVal > bVal) return 1 * sortDirection;
+          return 0;
+        });
+        renderTable();
+        updateSortIndicators();
+      }
+
+      function toggleEdit(row, player) {
+        const next = row.nextElementSibling;
+        if (next && next.classList.contains("edit-row")) {
+          next.remove();
           return;
         }
-
-        form = document.createElement("form");
-        form.className = "edit-form";
-        form.innerHTML = `
-        <input name="name" type="text" value="${player.name}" autocomplete="name" placeholder="Full Name" required>
-        <input name="email" type="email" value="${player.email || ""}" autocomplete="email" placeholder="Email">
-        <input name="phone" type="tel" value="${player.phone || ""}" autocomplete="tel" placeholder="Phone">
-        <input name="invitedBy" type="text" value="${player.invitedBy || ""}" autocomplete="off" placeholder="Invited By">
-        ${
-          player.role === "core"
-            ? ""
-            : `
-        <select name="role">
-          <option value="regular" ${player.role === "regular" ? "selected" : ""}>Regular</option>
-          <option value="guest" ${player.role === "guest" ? "selected" : ""}>Guest</option>
-        </select>`
-        }
-        <div class="form-buttons">
-          <button type="submit">Save</button>
-          <button type="button" class="cancel-btn">Cancel</button>
-        </div>
-      `;
-
-        form
-          .querySelector(".cancel-btn")
-          .addEventListener("click", () => form.remove());
-
+        const editRow = document.createElement("tr");
+        editRow.className = "edit-row";
+        editRow.innerHTML = `
+          <td colspan="5">
+            <form class="edit-form">
+              <input name="firstName" type="text" value="${
+                player.firstName || getFullName(player)
+              }" placeholder="First Name" required />
+              <input name="lastName" type="text" value="${
+                player.lastName || ""
+              }" placeholder="Last Name" />
+              <input name="email" type="email" value="${
+                player.email || ""
+              }" placeholder="Email" />
+              <input name="invitedBy" type="text" value="${
+                player.invitedBy || ""
+              }" placeholder="Invited By" />
+              ${
+                player.role === "core"
+                  ? ""
+                  : `<select name="role">
+              <option value="regular" ${
+                player.role === "regular" ? "selected" : ""
+              }>Regular</option>
+              <option value="guest" ${
+                player.role === "guest" ? "selected" : ""
+              }>Guest</option>
+            </select>`
+              }
+              <div class="form-buttons">
+                <button type="submit">Save</button>
+                <button type="button" class="cancel-btn">Cancel</button>
+              </div>
+            </form>
+          </td>`;
+        row.parentNode.insertBefore(editRow, row.nextSibling);
+        const form = editRow.querySelector("form");
+        form.querySelector(".cancel-btn").addEventListener("click", () => {
+          editRow.remove();
+        });
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
-          const formData = new FormData(form);
+          const fd = new FormData(form);
           const updated = {
-            name: formData.get("name").trim(),
-            email: formData.get("email").trim(),
-            phone: formData.get("phone").trim(),
-            invitedBy: formData.get("invitedBy").trim(),
+            firstName: fd.get("firstName").trim(),
+            lastName: fd.get("lastName").trim(),
+            email: fd.get("email").trim(),
+            invitedBy: fd.get("invitedBy").trim(),
           };
-          if (formData.get("role") !== null) {
-            updated.role = formData.get("role");
-          } else {
-            updated.role = player.role;
+          if (fd.get("role") !== null) {
+            updated.role = fd.get("role");
           }
-
-          if (!updated.name) {
-            alert("Name is required");
-            return;
-          }
-
           try {
-            const ref = doc(db, "players", player.id);
-            await updateDoc(ref, updated);
+            await updateDoc(doc(db, "players", player.id), updated);
             Object.assign(player, updated);
-            refreshCard(card, player);
-            alert("Player updated!");
-            form.remove();
+            editRow.remove();
+            renderTable();
           } catch (err) {
             console.error(err);
             alert("Update failed.");
           }
         });
-
-        card.appendChild(form);
       }
 
-      function createCard(player) {
-        const div = document.createElement("div");
-        div.className = "player-card";
-        div.dataset.id = player.id;
-        div.dataset.name = player.name.toLowerCase();
-
-        const info = document.createElement("div");
-        info.className = "player-info";
-        info.innerHTML = `
-        <strong>${player.name}</strong>
-        <span>📧 ${player.email || "No email provided"}</span>
-        <span>📞 ${player.phone || "No phone"}</span>
-        <span>🏷️ ${player.role || "Unassigned"}</span>
-      `;
-
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.type = "button";
-        editBtn.addEventListener("click", () => toggleEdit(div, player));
-
-        div.appendChild(info);
-        div.appendChild(editBtn);
-
-        return div;
-      }
-
-      async function renderPlayers() {
-        const snapshot = await getDocs(collection(db, "players"));
-        const players = [];
-        snapshot.forEach((docSnap) => {
-          players.push({ id: docSnap.id, ...docSnap.data() });
-        });
-
-        players.sort((a, b) => a.name.localeCompare(b.name));
-
-        const coreContainer = document.getElementById("corePlayers");
-        const otherContainer = document.getElementById("otherPlayers");
-        coreContainer.innerHTML = "";
-        otherContainer.innerHTML = "";
-
-        players.forEach((player) => {
-          const card = createCard(player);
-          if (player.role === "core") {
-            coreContainer.appendChild(card);
-          } else {
-            otherContainer.appendChild(card);
+      document
+        .getElementById("playersTableBody")
+        .addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          if (!id) return;
+          const row = e.target.closest("tr");
+          const player = players.find((p) => p.id === id);
+          if (e.target.classList.contains("delete-btn")) {
+            if (!confirm("Are you sure you want to delete this player?"))
+              return;
+            await deleteDoc(doc(db, "players", id));
+            players = players.filter((p) => p.id !== id);
+            renderTable();
+          } else if (e.target.classList.contains("edit-btn")) {
+            toggleEdit(row, player);
           }
         });
 
-        sortContainer(coreContainer);
-        sortContainer(otherContainer);
+      document
+        .querySelectorAll("#playersTable th[data-field]")
+        .forEach((th) => {
+          th.addEventListener("click", () => sortPlayers(th.dataset.field));
+        });
+
+      async function loadPlayers() {
+        const snapshot = await getDocs(collection(db, "players"));
+        players = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+        sortPlayers("name", true);
       }
 
-      renderPlayers();
+      loadPlayers();
     </script>
     <script src="loadNav.js"></script>
     <script type="module">
