@@ -167,7 +167,7 @@
 
               Object.values(playerInfo).forEach((player) => {
                 const count = getValidAttendanceCount(player);
-                attendanceCounts[player.name] = count;
+                attendanceCounts[player.id] = count;
                 totalAttendees += count;
               });
 
@@ -184,7 +184,7 @@
                 name: p.name,
                 firstName: p.firstName,
                 role: p.role,
-                count: attendanceCounts[p.name] || 0,
+                count: attendanceCounts[p.id] || 0,
               }));
 
               const nameMap = {
@@ -216,20 +216,21 @@
               });
 
               const chartData = Object.entries(attendanceCounts)
-                .map(([name, count]) => {
-                  const player = players.find((p) => p.name === name);
-                  const firstName = player?.firstName || name.split(" ")[0]; // Use firstName if available
-                  return { name: firstName, count };
+                .map(([id, count]) => {
+                  const player = players.find((p) => p.id === id);
+                  const firstName =
+                    player?.firstName || (player?.name || "").split(" ")[0];
+                  return { id, name: firstName, count };
                 })
                 .filter((entry) => {
-                  const isCore = corePlayers.some(
-                    (p) => p.firstName === entry.name,
-                  );
+                  const isCore = corePlayers.some((p) => p.id === entry.id);
                   return !isCore;
                 })
                 .sort((a, b) => {
                   if (b.count !== a.count) return b.count - a.count;
-                  return a.name.localeCompare(b.name);
+                  const nameA = playerInfo[a.id]?.name || "";
+                  const nameB = playerInfo[b.id]?.name || "";
+                  return nameA.localeCompare(nameB);
                 });
 
               console.log("chartData:", chartData);
