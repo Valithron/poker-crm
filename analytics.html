@@ -77,6 +77,11 @@
 
           const app = initializeApp(firebaseConfig);
           const db = getFirestore(app);
+          const errorEl = document.getElementById("noDataMessage");
+
+          function displayError(msg) {
+            if (errorEl) errorEl.textContent = msg;
+          }
 
           function filterValidEarnings(history) {
             return (history || []).filter(
@@ -349,16 +354,14 @@
               msgEl.textContent = "";
             } catch (err) {
               console.error("Failed to load analytics", err);
-              document.getElementById("noDataMessage").textContent =
-                "Error loading analytics. See console.";
+              displayError("Error loading analytics. See console.");
             }
           }
 
           await buildAnalytics();
         } catch (err) {
           console.error("Failed to initialize analytics", err);
-          document.getElementById("noDataMessage").textContent =
-            "Error loading analytics. See console.";
+          displayError("Error loading analytics. See console.");
         }
       });
     </script>

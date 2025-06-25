@@ -14,6 +14,7 @@
     <div id="navbar-placeholder"></div>
     <main class="page-content">
       <div id="liveEvents"></div>
+      <p id="errorMessage" class="error-message"></p>
 
       <div class="container">
         <div class="page-header mobile-offset">
@@ -94,30 +95,40 @@
       let choices;
       const coreIds = [];
       let players = [];
+      const errorEl = document.getElementById("errorMessage");
+
+      function displayError(msg) {
+        if (errorEl) errorEl.textContent = msg;
+      }
 
       function uniq(arr) {
         return Array.from(new Set(arr));
       }
 
       async function loadPlayers() {
-        const snapshot = await getDocs(collection(db, "players"));
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          players.push({ id: docSnap.id, name: data.name, role: data.role });
-          if (data.role === "core") {
-            coreIds.push(docSnap.id);
-            return;
-          }
-          const option = document.createElement("option");
-          option.value = docSnap.id;
-          option.textContent = data.name;
-          inviteesSelect.appendChild(option);
-        });
-        choices = new Choices(inviteesSelect, {
-          removeItemButton: true,
-          searchResultLimit: 50,
-          shouldSort: true,
-        });
+        try {
+          const snapshot = await getDocs(collection(db, "players"));
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            players.push({ id: docSnap.id, name: data.name, role: data.role });
+            if (data.role === "core") {
+              coreIds.push(docSnap.id);
+              return;
+            }
+            const option = document.createElement("option");
+            option.value = docSnap.id;
+            option.textContent = data.name;
+            inviteesSelect.appendChild(option);
+          });
+          choices = new Choices(inviteesSelect, {
+            removeItemButton: true,
+            searchResultLimit: 50,
+            shouldSort: true,
+          });
+        } catch (err) {
+          console.error("Failed to load players", err);
+          displayError("Failed to load players. Please try again.");
+        }
       }
 
       loadPlayers();
@@ -244,22 +255,33 @@
               earnings: earnMap[id] || 0,
             }));
 
-            await updateDoc(doc(db, "events", id), {
-              date: Timestamp.fromDate(
-                new Date(card.querySelector(".date-input").value),
-              ),
-              host: card.querySelector(".host-input").value.trim(),
-              notes: card.querySelector(".notes-input").value.trim(),
-              invited: uniq([...coreIds, ...invitedValues]),
-              attended: attendedData,
-            });
+            try {
+              await updateDoc(doc(db, "events", id), {
+                date: Timestamp.fromDate(
+                  new Date(card.querySelector(".date-input").value),
+                ),
+                host: card.querySelector(".host-input").value.trim(),
+                notes: card.querySelector(".notes-input").value.trim(),
+                invited: uniq([...coreIds, ...invitedValues]),
+                attended: attendedData,
+              });
+              displayError("");
+            } catch (err) {
+              console.error("Failed to save event", err);
+              displayError("Failed to save event.");
+            }
           });
 
           const lockBtn = document.createElement("button");
           lockBtn.textContent = "Lock Event";
           lockBtn.style.marginLeft = "0.5rem";
           lockBtn.addEventListener("click", async () => {
-            await updateDoc(doc(db, "events", id), { locked: true });
+            try {
+              await updateDoc(doc(db, "events", id), { locked: true });
+            } catch (err) {
+              console.error("Failed to lock event", err);
+              displayError("Failed to lock event.");
+            }
           });
 
           card.appendChild(saveBtn);
@@ -271,8 +293,15 @@
 
       onSnapshot(
         query(collection(db, "events"), where("locked", "==", false)),
-        (snap) => {
-          renderLiveEvents(snap.docs);
+        {
+          next: (snap) => {
+            renderLiveEvents(snap.docs);
+            displayError("");
+          },
+          error: (err) => {
+            console.error("Failed to load events", err);
+            displayError("Failed to load events.");
+          },
         },
       );
 
@@ -298,9 +327,10 @@
           });
 
           form.reset();
+          displayError("");
         } catch (error) {
           console.error("Error creating event:", error);
-          alert("Something went wrong.");
+          displayError("Failed to create event.");
         }
       });
     </script>

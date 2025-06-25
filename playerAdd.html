@@ -38,6 +38,7 @@
         <input type="text" id="invitedBy" placeholder="Invited By" />
         <button type="submit">Add Player</button>
       </form>
+      <p id="errorMessage" class="error-message"></p>
     </main>
 
     <script type="module">
@@ -60,6 +61,11 @@
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      const errorEl = document.getElementById("errorMessage");
+
+      function displayError(msg) {
+        if (errorEl) errorEl.textContent = msg;
+      }
 
       const form = document.getElementById("playerForm");
       form.addEventListener("submit", async (e) => {
@@ -86,9 +92,10 @@
           });
           alert("Player added!");
           form.reset();
+          displayError("");
         } catch (error) {
           console.error("Error adding document: ", error);
-          alert("Something went wrong.");
+          displayError("Failed to add player.");
         }
       });
     </script>

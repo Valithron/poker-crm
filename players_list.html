@@ -19,6 +19,7 @@
         <div id="otherSection" class="section">
           <div id="otherPlayers" class="players-grid"></div>
         </div>
+        <p id="errorMessage" class="error-message"></p>
       </div>
     </main>
 
@@ -43,6 +44,11 @@
 
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
+      const errorEl = document.getElementById("errorMessage");
+
+      function displayError(msg) {
+        if (errorEl) errorEl.textContent = msg;
+      }
 
       function sortContainer(container) {
         const cards = Array.from(container.children);
@@ -130,9 +136,10 @@
             refreshCard(card, player);
             alert("Player updated!");
             form.remove();
+            displayError("");
           } catch (err) {
             console.error(err);
-            alert("Update failed.");
+            displayError("Failed to update player.");
           }
         });
 
@@ -166,30 +173,36 @@
       }
 
       async function renderPlayers() {
-        const snapshot = await getDocs(collection(db, "players"));
-        const players = [];
-        snapshot.forEach((docSnap) => {
-          players.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        try {
+          const snapshot = await getDocs(collection(db, "players"));
+          const players = [];
+          snapshot.forEach((docSnap) => {
+            players.push({ id: docSnap.id, ...docSnap.data() });
+          });
 
-        players.sort((a, b) => a.name.localeCompare(b.name));
+          players.sort((a, b) => a.name.localeCompare(b.name));
 
-        const coreContainer = document.getElementById("corePlayers");
-        const otherContainer = document.getElementById("otherPlayers");
-        coreContainer.innerHTML = "";
-        otherContainer.innerHTML = "";
+          const coreContainer = document.getElementById("corePlayers");
+          const otherContainer = document.getElementById("otherPlayers");
+          coreContainer.innerHTML = "";
+          otherContainer.innerHTML = "";
 
-        players.forEach((player) => {
-          const card = createCard(player);
-          if (player.role === "core") {
-            coreContainer.appendChild(card);
-          } else {
-            otherContainer.appendChild(card);
-          }
-        });
+          players.forEach((player) => {
+            const card = createCard(player);
+            if (player.role === "core") {
+              coreContainer.appendChild(card);
+            } else {
+              otherContainer.appendChild(card);
+            }
+          });
 
-        sortContainer(coreContainer);
-        sortContainer(otherContainer);
+          sortContainer(coreContainer);
+          sortContainer(otherContainer);
+          displayError("");
+        } catch (err) {
+          console.error("Failed to load players", err);
+          displayError("Failed to load players.");
+        }
       }
 
       renderPlayers();

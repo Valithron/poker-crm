@@ -14,6 +14,7 @@
           <h1 class="page-title">🗓️ Poker Night Events</h1>
         </div>
         <div id="eventList"></div>
+        <p id="errorMessage" class="error-message"></p>
       </div>
     </main>
 
@@ -39,6 +40,11 @@
       const app = initializeApp(firebaseConfig);
       const db = getFirestore(app);
       const eventList = document.getElementById("eventList");
+      const errorEl = document.getElementById("errorMessage");
+
+      function displayError(msg) {
+        if (errorEl) errorEl.textContent = msg;
+      }
 
       async function fetchNames(ids) {
         const names = [];
@@ -79,33 +85,34 @@
       }
 
       async function renderEvents() {
-        const snap = await getDocs(collection(db, "events"));
-        const events = [];
-        for (const d of snap.docs) {
-          const data = d.data();
-          const invited = await fetchNames(data.invited || []);
-          const attended = await fetchAttendees(data.attended || []);
+        try {
+          const snap = await getDocs(collection(db, "events"));
+          const events = [];
+          for (const d of snap.docs) {
+            const data = d.data();
+            const invited = await fetchNames(data.invited || []);
+            const attended = await fetchAttendees(data.attended || []);
 
-          const dateObj = data.date?.toDate ? data.date.toDate() : new Date();
+            const dateObj = data.date?.toDate ? data.date.toDate() : new Date();
 
-          events.push({
-            locked: !!data.locked,
-            dateObj,
-            date: dateObj.toLocaleDateString(),
-            host: data.host || "",
-            notes: data.notes || "",
-            invited,
-            attended,
-          });
-        }
+            events.push({
+              locked: !!data.locked,
+              dateObj,
+              date: dateObj.toLocaleDateString(),
+              host: data.host || "",
+              notes: data.notes || "",
+              invited,
+              attended,
+            });
+          }
 
-        eventList.innerHTML = "";
+          eventList.innerHTML = "";
 
-        events.sort((a, b) => b.dateObj - a.dateObj);
-        for (const ev of events) {
-          const div = document.createElement("div");
-          div.className = "event";
-          div.innerHTML = `
+          events.sort((a, b) => b.dateObj - a.dateObj);
+          for (const ev of events) {
+            const div = document.createElement("div");
+            div.className = "event";
+            div.innerHTML = `
         <h2><strong>${ev.locked ? "🔒 " : ""}${ev.date}</strong></h2>
         ${ev.host ? `<p><strong>Host:</strong> ${ev.host}</p>` : ""}
         <p><strong>Notes:</strong> ${ev.notes || "—"}</p>
@@ -127,8 +134,12 @@
           )
           .join("")}</ul></div>
       `;
-
-          eventList.appendChild(div);
+            eventList.appendChild(div);
+          }
+          displayError("");
+        } catch (err) {
+          console.error("Failed to load events", err);
+          displayError("Failed to load events.");
         }
       }
 
