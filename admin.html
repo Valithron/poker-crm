@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BroTime Admin Dashboard</title>
     <link rel="stylesheet" href="styles.css?v=3" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"
+    />
   </head>
   <body>
     <div id="navbar-placeholder"></div>
@@ -71,7 +75,51 @@
             <select id="eAttendees" multiple></select>
             <button type="submit">Add Event</button>
           </form>
-          <div id="eventsList"></div>
+          <div class="events-table-wrapper">
+            <table id="eventsTable">
+              <thead>
+                <tr>
+                  <th data-field="date">
+                    Event Date <span class="sort-indicator"></span>
+                  </th>
+                  <th data-field="attendees">
+                    Attendees <span class="sort-indicator"></span>
+                  </th>
+                  <th data-field="notes">
+                    Notes <span class="sort-indicator"></span>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="eventsTableBody"></tbody>
+            </table>
+          </div>
+          <div id="eventEditModal" class="modal" style="display: none">
+            <div class="modal-content">
+              <form id="eventEditForm" class="edit-form">
+                <label>
+                  Date
+                  <input type="date" id="modalDate" required />
+                </label>
+                <label>
+                  Notes
+                  <input type="text" id="modalNotes" />
+                </label>
+                <label>
+                  Attendees
+                  <select id="modalAttendees" multiple></select>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.25rem">
+                  <input type="checkbox" id="modalAddBlank" /> Add blank
+                  earningsHistory entries for attendees
+                </label>
+                <div class="form-buttons">
+                  <button type="submit">Save</button>
+                  <button type="button" id="modalClose">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
         </section>
 
         <section id="earningsSection" class="section">
@@ -104,6 +152,7 @@
     </main>
 
     <script src="loadNav.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <script type="module">
       import { app, db } from "./firebaseInit.js";
       import {
@@ -122,11 +171,20 @@
       const statsUpdated = document.getElementById("statUpdated");
 
       const playersTableBody = document.getElementById("playersTableBody");
-      const eventsList = document.getElementById("eventsList");
+      const eventsTableBody = document.getElementById("eventsTableBody");
+      const eventEditModal = document.getElementById("eventEditModal");
+      const eventEditForm = document.getElementById("eventEditForm");
+      const modalDate = document.getElementById("modalDate");
+      const modalNotes = document.getElementById("modalNotes");
+      const modalAttendees = document.getElementById("modalAttendees");
+      const modalAddBlank = document.getElementById("modalAddBlank");
+      const modalClose = document.getElementById("modalClose");
       const attendeesSelect = document.getElementById("eAttendees");
       const earningsPlayerSelect = document.getElementById("earningsPlayer");
       const earningEventSelect = document.getElementById("earningEvent");
       const earningsTableBody = document.querySelector("#earningsTable tbody");
+
+      let modalSubmitHandler;
 
       let players = [];
       let events = [];
@@ -314,31 +372,219 @@
           th.addEventListener("click", () => sortPlayers(th.dataset.field));
         });
 
-      function renderEvents() {
-        eventsList.innerHTML = "";
-        earningEventSelect.innerHTML = "";
-        events
-          .sort((a, b) => {
-            const da = a.date?.toDate ? a.date.toDate() : new Date(a.date);
-            const db = b.date?.toDate ? b.date.toDate() : new Date(b.date);
-            return db - da;
-          })
-          .forEach((ev) => {
-            const div = document.createElement("div");
-            div.className = "event-card";
-            div.innerHTML = `
-            <h3>${formatDate(ev.date)}</h3>
-            <p>Attendees: ${(ev.attendees || []).length}</p>
-            <button data-id="${ev.id}" class="edit-event">Edit</button>
-            <button data-id="${ev.id}" class="delete-event">Delete</button>`;
-            eventsList.appendChild(div);
+      document
+        .querySelectorAll("#eventsTable th[data-field]")
+        .forEach((th) => {
+          th.addEventListener("click", () => sortEvents(th.dataset.field));
+        });
 
-            const opt = document.createElement("option");
-            opt.value = ev.id;
-            opt.textContent = formatDate(ev.date);
-            earningEventSelect.appendChild(opt);
+      let eventSortField = "date";
+      let eventSortDirection = -1;
+
+      function updateEventSortIndicators() {
+        document
+          .querySelectorAll("#eventsTable th[data-field]")
+          .forEach((th) => {
+            const span = th.querySelector(".sort-indicator");
+            if (!span) return;
+            if (th.dataset.field === eventSortField) {
+              span.textContent = eventSortDirection === 1 ? "▲" : "▼";
+            } else {
+              span.textContent = "";
+            }
           });
       }
+
+      function truncate(str, len = 30) {
+        if (!str) return "";
+        return str.length > len ? str.slice(0, len) + "..." : str;
+      }
+
+      function renderEvents() {
+        eventsTableBody.innerHTML = "";
+        earningEventSelect.innerHTML = "";
+        events.forEach((ev) => {
+          const tr = document.createElement("tr");
+          tr.dataset.id = ev.id;
+          tr.innerHTML = `
+            <td><button class="expand-btn" data-id="${ev.id}">▶</button>${formatDate(
+            ev.date
+          )}</td>
+            <td>${(ev.attendees || []).length}</td>
+            <td class="notes-cell" title="${ev.notes || ""}">${truncate(
+            ev.notes
+          )}</td>
+            <td class="player-actions">
+              <button data-id="${ev.id}" class="edit-event edit-btn" title="Edit">&#9881;</button>
+              <button data-id="${ev.id}" class="delete-event delete-btn" title="Delete">&#10006;</button>
+            </td>`;
+          eventsTableBody.appendChild(tr);
+
+          const opt = document.createElement("option");
+          opt.value = ev.id;
+          opt.textContent = formatDate(ev.date);
+          earningEventSelect.appendChild(opt);
+        });
+      }
+
+      function sortEvents(field, initial = false) {
+        if (eventSortField === field && !initial) {
+          eventSortDirection *= -1;
+        } else {
+          eventSortField = field;
+          eventSortDirection = field === "date" ? -1 : 1;
+        }
+        events.sort((a, b) => {
+          let aVal;
+          let bVal;
+          switch (field) {
+            case "attendees":
+              aVal = (a.attendees || []).length;
+              bVal = (b.attendees || []).length;
+              break;
+            case "notes":
+              aVal = (a.notes || "").toLowerCase();
+              bVal = (b.notes || "").toLowerCase();
+              break;
+            case "date":
+            default:
+              aVal = a.date?.toDate ? a.date.toDate() : new Date(a.date);
+              bVal = b.date?.toDate ? b.date.toDate() : new Date(b.date);
+              break;
+          }
+          if (aVal < bVal) return -1 * eventSortDirection;
+          if (aVal > bVal) return 1 * eventSortDirection;
+          return 0;
+        });
+        renderEvents();
+        updateEventSortIndicators();
+        updateStats();
+      }
+
+      function toggleEventExpand(row, ev) {
+        const next = row.nextElementSibling;
+        const btn = row.querySelector(".expand-btn");
+        if (next && next.classList.contains("expand-row")) {
+          next.remove();
+          if (btn) btn.textContent = "▶";
+          return;
+        }
+        const tr = document.createElement("tr");
+        tr.className = "expand-row";
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        const names = (ev.attendees || [])
+          .map((id) => {
+            const p = players.find((pl) => pl.id === id);
+            return p ? getFullName(p) : id;
+          })
+          .join(", ");
+        td.textContent = names || "No attendees";
+        tr.appendChild(td);
+        row.parentNode.insertBefore(tr, row.nextSibling);
+        if (btn) btn.textContent = "▼";
+      }
+
+      let attendeeChoices;
+
+      function openEventModal(ev) {
+        eventEditModal.style.display = "flex";
+        modalDate.value = formatDate(ev.date);
+        modalNotes.value = ev.notes || "";
+        modalAddBlank.checked = false;
+        if (attendeeChoices) {
+          attendeeChoices.destroy();
+          attendeeChoices = null;
+        }
+        modalAttendees.innerHTML = "";
+        players.forEach((p) => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = getFullName(p);
+          opt.selected = (ev.attendees || []).includes(p.id);
+          modalAttendees.appendChild(opt);
+        });
+        attendeeChoices = new Choices(modalAttendees, {
+          removeItemButton: true,
+          shouldSort: false,
+        });
+
+        if (modalSubmitHandler) {
+          eventEditForm.removeEventListener("submit", modalSubmitHandler);
+        }
+
+        const submitHandler = async (e) => {
+          e.preventDefault();
+          const newDate = modalDate.value;
+          const newNotes = modalNotes.value.trim();
+          const attendeeIds = attendeeChoices.getValue(true);
+          await updateDoc(doc(db, "events", ev.id), {
+            date: Timestamp.fromDate(new Date(newDate)),
+            notes: newNotes,
+            attendees: attendeeIds,
+          });
+          Object.assign(ev, {
+            date: Timestamp.fromDate(new Date(newDate)),
+            notes: newNotes,
+            attendees: attendeeIds,
+          });
+          if (modalAddBlank.checked) {
+            for (const id of attendeeIds) {
+              const player = players.find((p) => p.id === id);
+              if (!player) continue;
+              const exists = (player.earningsHistory || []).some(
+                (e) => e.eventId === ev.id,
+              );
+              if (!exists) {
+                player.earningsHistory = player.earningsHistory || [];
+                player.earningsHistory.push({ eventId: ev.id, amount: 100 });
+                await updateDoc(doc(db, "players", id), {
+                  earningsHistory: player.earningsHistory,
+                });
+              }
+            }
+          }
+          sortEvents(eventSortField, true);
+          eventEditModal.style.display = "none";
+          if (attendeeChoices) {
+            attendeeChoices.destroy();
+            attendeeChoices = null;
+          }
+          eventEditForm.removeEventListener("submit", submitHandler);
+          modalSubmitHandler = null;
+        };
+
+        modalSubmitHandler = submitHandler;
+        eventEditForm.addEventListener("submit", modalSubmitHandler);
+      }
+
+      modalClose.addEventListener("click", () => {
+        eventEditModal.style.display = "none";
+        if (attendeeChoices) {
+          attendeeChoices.destroy();
+          attendeeChoices = null;
+        }
+        eventEditForm.reset();
+        if (modalSubmitHandler) {
+          eventEditForm.removeEventListener("submit", modalSubmitHandler);
+          modalSubmitHandler = null;
+        }
+      });
+
+      eventEditModal.addEventListener("click", (e) => {
+        if (e.target === eventEditModal) {
+          eventEditModal.style.display = "none";
+          if (attendeeChoices) {
+            attendeeChoices.destroy();
+            attendeeChoices = null;
+          }
+          eventEditForm.reset();
+          if (modalSubmitHandler) {
+            eventEditForm.removeEventListener("submit", modalSubmitHandler);
+            modalSubmitHandler = null;
+          }
+        }
+      });
 
       function renderEarnings(playerId) {
         earningsTableBody.innerHTML = "";
@@ -366,7 +612,7 @@
         events = eSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
         updateStats();
         sortPlayers("name", true);
-        renderEvents();
+        sortEvents("date", true);
       }
 
       document
@@ -439,7 +685,7 @@
               notes,
               attendees,
             });
-            renderEvents();
+            sortEvents(eventSortField, true);
             updateStats();
             e.target.reset();
           } catch (err) {
@@ -448,34 +694,23 @@
           }
         });
 
-      document
-        .getElementById("eventsList")
-        .addEventListener("click", async (e) => {
-          const id = e.target.dataset.id;
-          if (e.target.classList.contains("delete-event")) {
-            if (!confirm("Delete event?")) return;
-            await deleteDoc(doc(db, "events", id));
-            events = events.filter((ev) => ev.id !== id);
-            renderEvents();
-            updateStats();
-          } else if (e.target.classList.contains("edit-event")) {
-            const ev = events.find((ev) => ev.id === id);
-            const date =
-              prompt("Date (YYYY-MM-DD)", formatDate(ev.date)) ||
-              formatDate(ev.date);
-            const notes = prompt("Notes", ev.notes || "") || "";
-            await updateDoc(doc(db, "events", id), {
-              date: Timestamp.fromDate(new Date(date)),
-              notes,
-            });
-            Object.assign(ev, {
-              date: Timestamp.fromDate(new Date(date)),
-              notes,
-            });
-            renderEvents();
-            updateStats();
-          }
-        });
+      eventsTableBody.addEventListener("click", async (e) => {
+        const id = e.target.dataset.id;
+        if (!id) return;
+        const row = e.target.closest("tr");
+        const ev = events.find((ev) => ev.id === id);
+        if (e.target.classList.contains("delete-event")) {
+          if (!confirm("Delete event?")) return;
+          await deleteDoc(doc(db, "events", id));
+          events = events.filter((ev) => ev.id !== id);
+          sortEvents(eventSortField, true);
+          updateStats();
+        } else if (e.target.classList.contains("edit-event")) {
+          openEventModal(ev);
+        } else if (e.target.classList.contains("expand-btn")) {
+          toggleEventExpand(row, ev);
+        }
+      });
 
       earningsPlayerSelect.addEventListener("change", (e) => {
         renderEarnings(e.target.value);
