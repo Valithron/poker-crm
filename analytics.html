@@ -84,9 +84,16 @@
             );
           }
 
+          function getValidAttendanceCount(player) {
+            return filterValidEarnings(player?.earningsHistory).length;
+          }
+
           function getMostRecentValidEarning(playerDoc, eventsMap) {
             const valid = filterValidEarnings(playerDoc.earningsHistory)
-              .map((e) => ({ amount: e.amount, date: eventsMap[e.eventId]?.date }))
+              .map((e) => ({
+                amount: e.amount,
+                date: eventsMap[e.eventId]?.date,
+              }))
               .filter((e) => e.date instanceof Date);
 
             valid.sort((a, b) => b.date - a.date);
@@ -95,7 +102,10 @@
 
           function getPlayerEarningsStats(playerDoc, eventsMap) {
             const history = filterValidEarnings(playerDoc.earningsHistory)
-              .map((e) => ({ amount: e.amount, date: eventsMap[e.eventId]?.date }))
+              .map((e) => ({
+                amount: e.amount,
+                date: eventsMap[e.eventId]?.date,
+              }))
               .filter((e) => e.date instanceof Date)
               .sort((a, b) => a.date - b.date);
 
@@ -107,6 +117,7 @@
                 average: "N/A",
                 lastEvent: "N/A",
                 earningsOverTime: [],
+                attendanceCount: getValidAttendanceCount(playerDoc),
               };
 
             let total = 0;
@@ -131,6 +142,7 @@
               average: average.toFixed(2),
               lastEvent: last !== null ? last.toFixed(2) : "N/A",
               earningsOverTime,
+              attendanceCount: getValidAttendanceCount(playerDoc),
             };
           }
 
@@ -160,9 +172,17 @@
                 };
               });
 
-              const lockedEvents = eventsSnap.docs.filter((d) => d.data().locked);
+              const lockedEvents = eventsSnap.docs.filter(
+                (d) => d.data().locked,
+              );
               const attendanceCounts = {};
               let totalAttendees = 0;
+
+              Object.values(playerInfo).forEach((player) => {
+                const count = getValidAttendanceCount(player);
+                attendanceCounts[player.name] = count;
+                totalAttendees += count;
+              });
 
               const totalEvents = lockedEvents.length;
               const averageAttendance =
@@ -179,12 +199,6 @@
                 role: p.role,
                 count: attendanceCounts[p.name] || 0,
               }));
-
-              // Calculate attendance counts from player earningsHistory
-              Object.values(playerInfo).forEach(player => {
-                attendanceCounts[player.name] = (player.earningsHistory || []).length;
-                totalAttendees += (player.earningsHistory || []).length;
-              });
 
               const nameMap = {
                 "Adam Oliver": "Adam",
@@ -290,6 +304,7 @@
                       ? (stats.lastEvent >= 0 ? "+" : "") + stats.lastEvent
                       : "N/A"
                   }</p>
+                  <p><strong>Attendance:</strong> ${stats.attendanceCount}</p>
                 `;
               }
 
