@@ -271,8 +271,16 @@ button {
 }
 
 /* Highlight for core members on admin page */
-#playersTable tr.core-member-row {
-  background-color: #fdf7e3;
+#playersTable tr.core-member-row,
+#playersTable tr.core-member-row td {
+  background-color: #fdf7e3 !important;
+}
+
+@media (max-width: 600px) {
+  #playersTable tr.core-member-row,
+  #playersTable tr.core-member-row td {
+    background-color: #fdf7e3 !important;
+  }
 }
 
 .player-card {

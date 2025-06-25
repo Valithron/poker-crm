@@ -286,6 +286,11 @@
               <button data-id="${p.id}" class="delete-btn" title="Delete">&#10006;</button>
             </td>`;
           playersTableBody.appendChild(tr);
+          if (tr.classList.contains("core-member-row")) {
+            tr.querySelectorAll("td").forEach((td) =>
+              td.classList.add("core-member-row")
+            );
+          }
 
           const opt = document.createElement("option");
           opt.value = p.id;
