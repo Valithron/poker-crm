@@ -136,7 +136,13 @@
         earningsPlayerSelect.innerHTML =
           '<option value="">Select player</option>';
         players
-          .sort((a, b) => a.firstName.localeCompare(b.firstName))
+          .sort((a, b) => {
+            const nameA =
+              (a.firstName || "") + (a.lastName ? " " + a.lastName : "");
+            const nameB =
+              (b.firstName || "") + (b.lastName ? " " + b.lastName : "");
+            return nameA.localeCompare(nameB);
+          })
           .forEach((p) => {
             const card = document.createElement("div");
             card.className = "player-card";
@@ -144,10 +150,16 @@
 
             const meta = document.createElement("div");
             meta.className = "player-meta";
+            const fullName =
+              (p.firstName || "") + (p.lastName ? " " + p.lastName : "");
             meta.innerHTML = `
-              <span>${p.firstName}</span>
+              <span>${fullName}</span>
               ${p.email ? `<span>${p.email}</span>` : ""}
-              <span>Invited by: ${p.invitedBy || "-"}</span>
+              ${
+                p.role === "core"
+                  ? ""
+                  : `<span>Invited by: ${p.invitedBy || "-"}</span>`
+              }
               <span>🎟 ${(p.earningsHistory || []).length}</span>
             `;
 
@@ -164,7 +176,7 @@
 
             const opt = document.createElement("option");
             opt.value = p.id;
-            opt.textContent = p.firstName;
+            opt.textContent = fullName;
             attendeesSelect.appendChild(opt.cloneNode(true));
           earningsPlayerSelect.appendChild(opt);
         });
