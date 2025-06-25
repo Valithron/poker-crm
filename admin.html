@@ -140,22 +140,77 @@
           .forEach((p) => {
             const card = document.createElement("div");
             card.className = "player-card";
-            card.innerHTML = `
-            <strong>${p.firstName}</strong>
-            <span>${p.email || ""}</span>
-            <span>Invited by: ${p.invitedBy || "-"}</span>
-            <span>Attendance: ${(p.earningsHistory || []).length}</span>
-            <button data-id="${p.id}" class="edit-player">Edit</button>
-            <button data-id="${p.id}" class="delete-player">Delete</button>
-          `;
+            card.dataset.id = p.id;
+
+            const meta = document.createElement("div");
+            meta.className = "player-meta";
+            meta.innerHTML = `
+              <span>${p.firstName}</span>
+              ${p.email ? `<span>${p.email}</span>` : ""}
+              <span>Invited by: ${p.invitedBy || "-"}</span>
+              <span>🎟 ${(p.earningsHistory || []).length}</span>
+            `;
+
+            const actions = document.createElement("div");
+            actions.className = "player-actions";
+            actions.innerHTML = `
+              <button data-id="${p.id}" class="edit-btn" title="Edit">&#9881;</button>
+              <button data-id="${p.id}" class="delete-btn" title="Delete">&#10006;</button>
+            `;
+
+            card.appendChild(meta);
+            card.appendChild(actions);
             playersList.appendChild(card);
 
             const opt = document.createElement("option");
             opt.value = p.id;
             opt.textContent = p.firstName;
             attendeesSelect.appendChild(opt.cloneNode(true));
-            earningsPlayerSelect.appendChild(opt);
-          });
+          earningsPlayerSelect.appendChild(opt);
+        });
+      }
+
+      function togglePlayerEdit(card, player) {
+        let form = card.querySelector("form.edit-form");
+        if (form) {
+          form.remove();
+          return;
+        }
+
+        form = document.createElement("form");
+        form.className = "edit-form";
+        form.innerHTML = `
+          <input name="firstName" type="text" value="${player.firstName}" placeholder="First Name" required />
+          <input name="email" type="email" value="${player.email || ''}" placeholder="Email" />
+          <input name="invitedBy" type="text" value="${player.invitedBy || ''}" placeholder="Invited By" />
+          <div class="form-buttons">
+            <button type="submit">Save</button>
+            <button type="button" class="cancel-btn">Cancel</button>
+          </div>
+        `;
+
+        form.querySelector(".cancel-btn").addEventListener("click", () => form.remove());
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(form);
+          const updated = {
+            firstName: formData.get("firstName").trim(),
+            email: formData.get("email").trim().toLowerCase(),
+            invitedBy: formData.get("invitedBy").trim(),
+          };
+          try {
+            await updateDoc(doc(db, "players", player.id), updated);
+            Object.assign(player, updated);
+            renderPlayers();
+            updateStats();
+          } catch (err) {
+            console.error(err);
+            alert("Update failed.");
+          }
+        });
+
+        card.appendChild(form);
       }
 
       function renderEvents() {
@@ -250,25 +305,16 @@
         .getElementById("playersList")
         .addEventListener("click", async (e) => {
           const id = e.target.dataset.id;
-          if (e.target.classList.contains("delete-player")) {
-            if (!confirm("Delete player?")) return;
+          if (e.target.classList.contains("delete-btn")) {
+            if (!confirm("Are you sure you want to delete this player?")) return;
             await deleteDoc(doc(db, "players", id));
             players = players.filter((p) => p.id !== id);
             renderPlayers();
             updateStats();
-          } else if (e.target.classList.contains("edit-player")) {
+          } else if (e.target.classList.contains("edit-btn")) {
+            const card = e.target.closest(".player-card");
             const p = players.find((x) => x.id === id);
-            const firstName = prompt("First Name", p.firstName) || p.firstName;
-            const email = prompt("Email", p.email) || p.email;
-            const invitedBy = prompt("Invited By", p.invitedBy || "") || "";
-            await updateDoc(doc(db, "players", id), {
-              firstName,
-              email: email.toLowerCase(),
-              invitedBy,
-            });
-            Object.assign(p, { firstName, email, invitedBy });
-            renderPlayers();
-            updateStats();
+            togglePlayerEdit(card, p);
           }
         });
 
