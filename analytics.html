@@ -84,8 +84,21 @@
             );
           }
 
-          function getPlayerEarningsStats(playerDoc) {
-            const history = filterValidEarnings(playerDoc.earningsHistory);
+          function getMostRecentValidEarning(playerDoc, eventsMap) {
+            const valid = filterValidEarnings(playerDoc.earningsHistory)
+              .map((e) => ({ amount: e.amount, date: eventsMap[e.eventId]?.date }))
+              .filter((e) => e.date instanceof Date);
+
+            valid.sort((a, b) => b.date - a.date);
+            return valid[0]?.amount ?? null;
+          }
+
+          function getPlayerEarningsStats(playerDoc, eventsMap) {
+            const history = filterValidEarnings(playerDoc.earningsHistory)
+              .map((e) => ({ amount: e.amount, date: eventsMap[e.eventId]?.date }))
+              .filter((e) => e.date instanceof Date)
+              .sort((a, b) => a.date - b.date);
+
             if (!history.length)
               return {
                 totalEarnings: "N/A",
@@ -101,11 +114,7 @@
             let losses = 0;
             const earningsOverTime = [];
 
-            const sorted = [...history].sort((a, b) =>
-              a.eventId.localeCompare(b.eventId),
-            );
-
-            for (const { amount } of sorted) {
+            for (const { amount } of history) {
               total += amount;
               earningsOverTime.push({ earnings: amount });
               if (amount > 0) wins++;
@@ -113,14 +122,14 @@
             }
 
             const average = total / earningsOverTime.length;
-            const last = earningsOverTime.at(-1)?.earnings ?? 0;
+            const last = getMostRecentValidEarning(playerDoc, eventsMap);
 
             return {
               totalEarnings: total.toFixed(2),
               wins,
               losses,
               average: average.toFixed(2),
-              lastEvent: last.toFixed(2),
+              lastEvent: last !== null ? last.toFixed(2) : "N/A",
               earningsOverTime,
             };
           }
@@ -131,6 +140,14 @@
                 getDocs(collection(db, "players")),
                 getDocs(collection(db, "events")),
               ]);
+
+              const eventsMap = {};
+              eventsSnap.forEach((d) => {
+                const data = d.data();
+                eventsMap[d.id] = {
+                  date: data.date?.toDate ? data.date.toDate() : null,
+                };
+              });
 
               const playerInfo = {};
               playersSnap.forEach((d) => {
@@ -259,7 +276,7 @@
                   (p) => p.name === name,
                 );
                 if (!playerDoc) return (container.innerHTML = "");
-                const stats = getPlayerEarningsStats(playerDoc);
+                const stats = getPlayerEarningsStats(playerDoc, eventsMap);
                 container.innerHTML = `
                   <p><strong>Total:</strong> ${
                     stats.totalEarnings !== "N/A" ? stats.totalEarnings : "N/A"
