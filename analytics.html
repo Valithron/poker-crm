@@ -58,25 +58,11 @@
           console.log("React version:", React?.version);
           console.log("Chart modules:", { ResponsiveContainer, BarChart });
 
-          const { initializeApp } = await import(
-            "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"
-          );
-          const { getFirestore, collection, getDocs, getDoc, doc } =
+          const { app, db } = await import("./firebaseInit.js");
+          const { collection, getDocs, getDoc, doc } =
             await import(
               "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
             );
-
-          const firebaseConfig = {
-            apiKey: "AIzaSyDqLxlBmdM_O1wmeOPPKyRh8PFnSw-dTH0",
-            authDomain: "poker-crm.firebaseapp.com",
-            projectId: "poker-crm",
-            storageBucket: "poker-crm.appspot.com",
-            messagingSenderId: "218784808902",
-            appId: "1:218784808902:web:c587bdf584d704f7733107",
-          };
-
-          const app = initializeApp(firebaseConfig);
-          const db = getFirestore(app);
 
           function filterValidEarnings(history) {
             return (history || []).filter(
