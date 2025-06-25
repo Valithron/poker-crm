@@ -165,6 +165,7 @@
               playersSnap.forEach((d) => {
                 const data = d.data();
                 playerInfo[d.id] = {
+                  id: d.id,
                   name: data.name,
                   firstName: data.firstName || (data.name || "").split(" ")[0],
                   role: data.role,
@@ -193,7 +194,7 @@
                 averageAttendance;
 
               const players = Object.values(playerInfo).map((p) => ({
-                id: p.id, // Add player ID
+                id: p.id,
                 name: p.name,
                 firstName: p.firstName,
                 role: p.role,
