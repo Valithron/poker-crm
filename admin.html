@@ -217,7 +217,27 @@
 
       function formatDate(ts) {
         const d = ts?.toDate ? ts.toDate() : new Date(ts);
-        return d.toISOString().split("T")[0];
+        return d.toLocaleDateString("en-US", { timeZone: "UTC" });
+      }
+
+      function getAttendeeIds(ev) {
+        if (Array.isArray(ev.attended)) {
+          return ev.attended.map((a) => (typeof a === "string" ? a : a.id));
+        }
+        if (Array.isArray(ev.attendees)) {
+          return ev.attendees;
+        }
+        if (ev.playerAttendance && typeof ev.playerAttendance === "object") {
+          return Object.entries(ev.playerAttendance)
+            .filter(([, v]) => v)
+            .map(([k]) => k);
+        }
+        return [];
+      }
+
+      function getAttendanceCount(ev) {
+        const ids = getAttendeeIds(ev);
+        return ids.length;
       }
 
       function updateStats() {
@@ -451,11 +471,12 @@
         events.forEach((ev) => {
           const tr = document.createElement("tr");
           tr.dataset.id = ev.id;
+          const count = getAttendanceCount(ev);
           tr.innerHTML = `
             <td><button class="expand-btn" data-id="${ev.id}">▶</button>${formatDate(
             ev.date
           )}</td>
-            <td>${(ev.attendees || []).length}</td>
+            <td>${count}</td>
             <td>${ev.host || ""}</td>
             <td class="notes-cell" title="${ev.notes || ""}">${truncate(
             ev.notes
@@ -485,8 +506,8 @@
           let bVal;
           switch (field) {
             case "attendees":
-              aVal = (a.attendees || []).length;
-              bVal = (b.attendees || []).length;
+              aVal = getAttendanceCount(a);
+              bVal = getAttendanceCount(b);
               break;
             case "notes":
               aVal = (a.notes || "").toLowerCase();
@@ -523,7 +544,7 @@
         tr.className = "expand-row";
         const td = document.createElement("td");
         td.colSpan = 5;
-        const names = (ev.attendees || [])
+        const names = getAttendeeIds(ev)
           .map((id) => {
             const p = players.find((pl) => pl.id === id);
             return p ? getFullName(p) : id;
@@ -586,7 +607,7 @@
           const opt = document.createElement("option");
           opt.value = p.id;
           opt.textContent = getFullName(p);
-          opt.selected = (ev.attendees || []).includes(p.id);
+          opt.selected = getAttendeeIds(ev).includes(p.id);
           modalAttendees.appendChild(opt);
         });
         attendeeChoices = new Choices(modalAttendees, {
@@ -610,14 +631,14 @@
             host: newHost,
             notes: newNotes,
             invited: invitedIds,
-            attendees: attendeeIds,
+            attended: attendeeIds,
           });
           Object.assign(ev, {
             date: Timestamp.fromDate(new Date(newDate)),
             host: newHost,
             notes: newNotes,
             invited: invitedIds,
-            attendees: attendeeIds,
+            attended: attendeeIds,
           });
           if (modalAddBlank.checked) {
             for (const id of attendeeIds) {
@@ -780,7 +801,7 @@
               host,
               notes,
               invited,
-              attendees,
+              attended: attendees,
             });
             events.push({
               id: docRef.id,
@@ -788,7 +809,7 @@
               host,
               notes,
               invited,
-              attendees,
+              attended: attendees,
             });
             sortEvents(eventSortField, true);
             updateStats();
