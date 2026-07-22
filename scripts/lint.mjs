@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 
-const roots = ["src", "functions", "tests"];
+const roots = ["src", "shared", "functions", "tests"];
 const extensions = new Set([".ts", ".tsx"]);
 const forbidden = [
   { pattern: /firebase/i, message: "Legacy Firebase reference" },
