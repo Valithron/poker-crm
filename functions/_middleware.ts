@@ -4,7 +4,11 @@ import type { AppPagesFunction } from "./lib/types";
 
 export const onRequest: AppPagesFunction = async (context) => {
   const pathname = new URL(context.request.url).pathname;
-  if (!pathname.startsWith("/api/") && !pathname.startsWith("/money-api/")) {
+  if (
+    !pathname.startsWith("/api/") &&
+    !pathname.startsWith("/money-api/") &&
+    !pathname.startsWith("/ops-api/")
+  ) {
     return context.next();
   }
 
