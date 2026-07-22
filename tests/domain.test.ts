@@ -4,7 +4,10 @@ import {
   countAttendance,
   deriveDisplayName,
   eventCreateSchema,
+  eventPatchSchema,
+  eventPlayerPatchSchema,
   playerCreateSchema,
+  playerPatchSchema,
 } from "../shared/domain";
 
 describe("event status transitions", () => {
@@ -18,7 +21,7 @@ describe("event status transitions", () => {
     expect(canTransition("draft", "completed")).toBe(false);
   });
 
-  it("keeps completed events locked", () => {
+  it("keeps completed events out of normal transitions", () => {
     expect(canTransition("completed", "active")).toBe(false);
   });
 });
@@ -36,6 +39,11 @@ describe("request validation", () => {
     expect(deriveDisplayName(result)).toBe("Sterling Knight-Pinneo");
   });
 
+  it("allows a player to be archived and restored", () => {
+    expect(playerPatchSchema.parse({ status: "archived" }).status).toBe("archived");
+    expect(playerPatchSchema.parse({ status: "active" }).status).toBe("active");
+  });
+
   it("requires an offset-aware event timestamp", () => {
     expect(() =>
       eventCreateSchema.parse({ title: "Poker Night", startsAt: "2026-08-01T19:00", location: "" }),
@@ -47,5 +55,25 @@ describe("request validation", () => {
         location: "",
       }).startsAt,
     ).toBe("2026-08-01T19:00:00-06:00");
+  });
+
+  it("accepts correction notes alongside event edits", () => {
+    const result = eventPatchSchema.parse({
+      location: "Updated address",
+      correctionNote: "Corrected the saved location.",
+    });
+    expect(result.location).toBe("Updated address");
+  });
+
+  it("supports every editable roster field", () => {
+    const result = eventPlayerPatchSchema.parse({
+      invitationStatus: "not_invited",
+      rsvpStatus: "no",
+      attended: false,
+      notes: "Entered after the night.",
+      correctionNote: "Corrected the roster record.",
+    });
+    expect(result.invitationStatus).toBe("not_invited");
+    expect(result.attended).toBe(false);
   });
 });
