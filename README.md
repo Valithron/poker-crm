@@ -1,63 +1,45 @@
 # BroTM Poker
 
-A private, mobile-first organizer application for planning, running, and closing recurring home poker nights.
+A private, mobile-first organizer application for planning, running, and closing recurring poker nights.
 
-## Current slice
-
-The v2 organizer foundation supports:
-
-- Cloudflare Access-backed organizer identity
-- player creation and directory browsing
-- draft poker-night creation
-- event rosters and RSVP status
-- live attendance check-in
-- controlled event status transitions
-- event completion and history
-
-Money tracking, automatic invitations, player accounts, and analytics are intentionally later phases.
-
-## Stack
+## Technology
 
 - Cloudflare Pages
 - Cloudflare Pages Functions
-- Cloudflare D1
+- One remote Cloudflare D1 database
+- Wrangler local D1 storage for development
 - Cloudflare Access
-- React
-- TypeScript
-- Vite
-- Zod
-- Vitest
+- React, TypeScript, and Vite
 
-## Install and validate
+## Local validation
 
 ```bash
 npm install
 npm run check
 ```
 
-The production build writes to `dist/`.
-
-## Local development
-
-Apply the initial migration and add a development organizer before starting Pages Functions. See [`docs/CLOUDFLARE_V2_SETUP.md`](docs/CLOUDFLARE_V2_SETUP.md).
+## Local application development
 
 ```bash
+npm run db:migrate:local
 npm run build
 npm run dev
 ```
 
-For frontend-only styling work:
-
-```bash
-npm run dev:web
-```
+Create `.dev.vars` and seed a local organizer before starting the application. See [`docs/CLOUDFLARE_V2_SETUP.md`](docs/CLOUDFLARE_V2_SETUP.md).
 
 ## Cloudflare Pages
 
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Root directory: leave blank
-- D1 binding: `DB`
-- Required variables: `TEAM_DOMAIN`, `POLICY_AUD`, `ENVIRONMENT`
+- Production branch: `main`
 
-Production: `https://poker.skpfam.com`
+The production Pages environment needs one D1 binding named `DB`, pointing to the remote `brotm-poker` database. Bindings are managed in the Cloudflare dashboard.
+
+## Documentation
+
+- [`docs/CLOUDFLARE_V2_SETUP.md`](docs/CLOUDFLARE_V2_SETUP.md): D1, Access, Pages variables, and organizer setup
+- [`docs/PRODUCT_SPEC_V2.md`](docs/PRODUCT_SPEC_V2.md): approved product definition
+- [`docs/FIRST_SLICE_WORK_ORDER.md`](docs/FIRST_SLICE_WORK_ORDER.md): implementation scope and acceptance criteria
+- [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md): durable product and architecture decisions
