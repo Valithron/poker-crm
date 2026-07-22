@@ -9,9 +9,9 @@ describe("event workspace routing", () => {
   it("finds the event id across unified event surfaces", () => {
     const id = "8d2f4b93-7dd5-4a3f-9a2d-91d1554e5b20";
     expect(eventIdFromPath(`/events/${id}`)).toBe(id);
+    expect(eventIdFromPath(`/events/${id}/rsvp-links`)).toBe(id);
     expect(eventIdFromPath(`/ops/events/${id}`)).toBe(id);
     expect(eventIdFromPath(`/money/events/${id}`)).toBe(id);
-    expect(eventIdFromPath(`/rsvp/events/${id}`)).toBe(id);
   });
 
   it("does not treat list, public RSVP, and settings pages as event workspaces", () => {
