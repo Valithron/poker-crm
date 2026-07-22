@@ -1,6 +1,6 @@
 {
   "name": "brotm-poker",
-  "version": "2.2.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "Private organizer application for BroTM Poker nights.",
