@@ -11,12 +11,14 @@ describe("event workspace routing", () => {
     expect(eventIdFromPath(`/events/${id}`)).toBe(id);
     expect(eventIdFromPath(`/ops/events/${id}`)).toBe(id);
     expect(eventIdFromPath(`/money/events/${id}`)).toBe(id);
+    expect(eventIdFromPath(`/rsvp/events/${id}`)).toBe(id);
   });
 
-  it("does not treat list and settings pages as event workspaces", () => {
+  it("does not treat list, public RSVP, and settings pages as event workspaces", () => {
     expect(eventIdFromPath("/events")).toBeNull();
     expect(eventIdFromPath("/ops/settings")).toBeNull();
     expect(eventIdFromPath("/money/players/player-id")).toBeNull();
+    expect(eventIdFromPath("/rsvp/private-token-value")).toBeNull();
   });
 });
 
@@ -28,9 +30,9 @@ describe("deployment health messaging", () => {
   });
 
   it("names missing schema requirements", () => {
-    const message = healthMessage(2, ["app_settings"], ["events.capacity"]);
-    expect(message).toContain("app_settings");
-    expect(message).toContain("events.capacity");
+    const message = healthMessage(3, ["event_invites"], ["events.rsvp_location_visibility"]);
+    expect(message).toContain("event_invites");
+    expect(message).toContain("events.rsvp_location_visibility");
     expect(message).toContain(`migration ${REQUIRED_SCHEMA_VERSION}`);
   });
 });
