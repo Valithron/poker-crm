@@ -1,6 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { APP_VERSION, eventIdFromPath, type HealthReport } from "../shared/app-shell";
+import {
+  APP_VERSION,
+  REQUIRED_SCHEMA_VERSION,
+  eventIdFromPath,
+  type HealthReport,
+} from "../shared/app-shell";
 import { App } from "./App";
 import { api, ApiError } from "./api";
 import { MoneyEventPage, PlayerMoneyPage } from "./Money";
@@ -29,7 +34,11 @@ function ViewRouter() {
 
 function NavItem({ to, children, active }: { to: string; children: ReactNode; active?: boolean }) {
   return (
-    <NavLink to={to} end={to === "/"} className={active ? "active" : undefined}>
+    <NavLink
+      to={to}
+      end={to === "/"}
+      className={({ isActive }) => (active || isActive ? "active" : undefined)}
+    >
       {children}
     </NavLink>
   );
@@ -58,7 +67,7 @@ export function UnifiedApp() {
           appVersion: APP_VERSION,
           commit: null,
           schemaVersion: 0,
-          requiredSchemaVersion: 3,
+          requiredSchemaVersion: REQUIRED_SCHEMA_VERSION,
           missingTables: [],
           missingColumns: [],
           message: "The deployment health check could not be reached.",
@@ -124,9 +133,9 @@ export function UnifiedApp() {
         </nav>
       ) : null}
 
-      <main id="unified-main" className="unified-main">
+      <div id="unified-main" className="unified-main" role="main">
         <ViewRouter />
-      </main>
+      </div>
 
       <footer className="unified-footer">
         <span>BroTM Poker v{health?.appVersion ?? APP_VERSION}</span>
