@@ -5,8 +5,11 @@ import {
   eventCreateSchema,
   eventPatchSchema,
   eventPlayerCreateSchema,
+  eventPlayerDeleteSchema,
   eventPlayerPatchSchema,
+  eventReopenSchema,
   playerCreateSchema,
+  playerPatchSchema,
   type EventStatus,
 } from "../../shared/domain";
 import { apiError, json, readJson, validationError } from "../lib/http";
@@ -33,6 +36,7 @@ interface EventRow {
   host_name: string | null;
   location: string;
   game_notes: string | null;
+  notes: string | null;
   status: EventStatus;
   created_at: string;
   updated_at: string;
@@ -51,6 +55,14 @@ interface EventPlayerRow {
   attended: number;
   checked_in_at: string | null;
   notes: string | null;
+}
+
+interface EventAuditRow {
+  id: string;
+  action: string;
+  details_json: string;
+  created_at: string;
+  organizer_name: string;
 }
 
 function playerJson(row: PlayerRow) {
@@ -77,6 +89,7 @@ function eventJson(row: EventRow) {
     hostName: row.host_name,
     location: row.location,
     gameNotes: row.game_notes,
+    notes: row.notes,
     status: row.status,
     attendanceCount: Number(row.attendance_count ?? 0),
     playerCount: Number(row.player_count ?? 0),
@@ -100,6 +113,63 @@ function eventPlayerJson(row: EventPlayerRow) {
   };
 }
 
+function auditJson(row: EventAuditRow) {
+  let details: Record<string, unknown> = {};
+  try {
+    details = JSON.parse(row.details_json) as Record<string, unknown>;
+  } catch {
+    details = {};
+  }
+  return {
+    id: row.id,
+    action: row.action,
+    details,
+    organizerName: row.organizer_name,
+    createdAt: row.created_at,
+  };
+}
+
+function isLockedStatus(status: EventStatus): boolean {
+  return ["completed", "cancelled", "archived"].includes(status);
+}
+
+function requireCorrectionNote(event: EventRow, note?: string): string | undefined {
+  if (!isLockedStatus(event.status)) return undefined;
+  if (!note) {
+    throw new Response("A correction note is required to edit a locked event.", { status: 409 });
+  }
+  return note;
+}
+
+function auditStatement(
+  db: D1Database,
+  eventId: string,
+  organizer: OrganizerIdentity,
+  action: string,
+  details: Record<string, unknown>,
+  createdAt: string,
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO event_audit_log
+       (id, event_id, organizer_id, action, details_json, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)`,
+    )
+    .bind(crypto.randomUUID(), eventId, organizer.id, action, JSON.stringify(details), createdAt);
+}
+
+function changesBetween(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): Record<string, { from: unknown; to: unknown }> {
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const [field, to] of Object.entries(after)) {
+    const from = before[field];
+    if (!Object.is(from, to)) changes[field] = { from, to };
+  }
+  return changes;
+}
+
 async function getEvent(db: D1Database, id: string): Promise<EventRow | null> {
   return db
     .prepare(
@@ -116,12 +186,9 @@ async function getEvent(db: D1Database, id: string): Promise<EventRow | null> {
     .first<EventRow>();
 }
 
-async function requireEditableEvent(db: D1Database, id: string): Promise<EventRow> {
+async function requireEvent(db: D1Database, id: string): Promise<EventRow> {
   const event = await getEvent(db, id);
   if (!event) throw new Response("Event not found", { status: 404 });
-  if (["completed", "cancelled", "archived"].includes(event.status)) {
-    throw new Response("Completed or cancelled events cannot be edited", { status: 409 });
-  }
   return event;
 }
 
@@ -165,10 +232,17 @@ async function dashboard(db: D1Database): Promise<Response> {
   });
 }
 
-async function listPlayers(db: D1Database): Promise<Response> {
-  const rows = await db
-    .prepare("SELECT * FROM players WHERE status = 'active' ORDER BY display_name COLLATE NOCASE")
-    .all<PlayerRow>();
+async function listPlayers(request: Request, db: D1Database): Promise<Response> {
+  const status = new URL(request.url).searchParams.get("status") ?? "active";
+  if (!["active", "archived", "all"].includes(status)) {
+    return apiError(400, "BAD_REQUEST", "Player status filter is invalid.");
+  }
+
+  const statement =
+    status === "all"
+      ? db.prepare("SELECT * FROM players ORDER BY status, display_name COLLATE NOCASE")
+      : db.prepare("SELECT * FROM players WHERE status = ?1 ORDER BY display_name COLLATE NOCASE").bind(status);
+  const rows = await statement.all<PlayerRow>();
   return json({ players: rows.results.map(playerJson) });
 }
 
@@ -221,6 +295,38 @@ async function playerDetail(db: D1Database, id: string): Promise<Response> {
   return json({ player: playerJson(player), history: history.results.map(eventJson) });
 }
 
+async function patchPlayer(request: Request, db: D1Database, id: string): Promise<Response> {
+  const current = await db.prepare("SELECT * FROM players WHERE id = ?1").bind(id).first<PlayerRow>();
+  if (!current) return apiError(404, "NOT_FOUND", "Player not found.");
+
+  const input = playerPatchSchema.parse(await readJson(request));
+  const firstName = input.firstName ?? current.first_name;
+  const lastName = input.lastName ?? current.last_name;
+  const displayName =
+    input.displayName !== undefined
+      ? deriveDisplayName({ firstName, lastName, displayName: input.displayName })
+      : current.display_name;
+  const email = input.email !== undefined ? input.email : (current.email ?? "");
+  const phone = input.phone !== undefined ? input.phone : (current.phone ?? "");
+  const notes = input.notes !== undefined ? input.notes : (current.notes ?? "");
+  const status = input.status ?? current.status;
+  const now = new Date().toISOString();
+
+  await db
+    .prepare(
+      `UPDATE players
+       SET first_name = ?1, last_name = ?2, display_name = ?3,
+           email = NULLIF(?4, ''), phone = NULLIF(?5, ''), notes = NULLIF(?6, ''),
+           status = ?7, updated_at = ?8
+       WHERE id = ?9`,
+    )
+    .bind(firstName, lastName, displayName, email, phone, notes, status, now, id)
+    .run();
+
+  const row = await db.prepare("SELECT * FROM players WHERE id = ?1").bind(id).first<PlayerRow>();
+  return json({ player: playerJson(row as PlayerRow) });
+}
+
 async function listEvents(request: Request, db: D1Database): Promise<Response> {
   const status = new URL(request.url).searchParams.get("status");
   const where = status ? "WHERE e.status = ?1" : "";
@@ -251,9 +357,9 @@ async function createEvent(
   await db
     .prepare(
       `INSERT INTO events
-       (id, title, starts_at, host_player_id, location, game_notes, status,
+       (id, title, starts_at, host_player_id, location, game_notes, notes, status,
         created_by_organizer_id, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, NULLIF(?6, ''), 'draft', ?7, ?8, ?8)`,
+       VALUES (?1, ?2, ?3, ?4, ?5, NULLIF(?6, ''), NULLIF(?7, ''), 'draft', ?8, ?9, ?9)`,
     )
     .bind(
       id,
@@ -262,6 +368,7 @@ async function createEvent(
       input.hostPlayerId ?? null,
       input.location,
       input.gameNotes ?? "",
+      input.notes ?? "",
       organizer.id,
       now,
     )
@@ -272,7 +379,7 @@ async function createEvent(
 }
 
 async function eventDetail(db: D1Database, id: string): Promise<Response> {
-  const [event, players] = await Promise.all([
+  const [event, players, audits] = await Promise.all([
     getEvent(db, id),
     db
       .prepare(
@@ -280,66 +387,140 @@ async function eventDetail(db: D1Database, id: string): Promise<Response> {
          FROM event_players ep
          JOIN players p ON p.id = ep.player_id
          WHERE ep.event_id = ?1
-         ORDER BY p.display_name COLLATE NOCASE`,
+         ORDER BY ep.attended DESC, p.display_name COLLATE NOCASE`,
       )
       .bind(id)
       .all<EventPlayerRow>(),
+    db
+      .prepare(
+        `SELECT l.id, l.action, l.details_json, l.created_at,
+                o.display_name AS organizer_name
+         FROM event_audit_log l
+         JOIN organizers o ON o.id = l.organizer_id
+         WHERE l.event_id = ?1
+         ORDER BY l.created_at DESC`,
+      )
+      .bind(id)
+      .all<EventAuditRow>(),
   ]);
   if (!event) return apiError(404, "NOT_FOUND", "Event not found.");
-  return json({ event: eventJson(event), players: players.results.map(eventPlayerJson) });
+  return json({
+    event: eventJson(event),
+    players: players.results.map(eventPlayerJson),
+    audits: audits.results.map(auditJson),
+  });
 }
 
-async function patchEvent(request: Request, db: D1Database, id: string): Promise<Response> {
-  const current = await requireEditableEvent(db, id);
+async function patchEvent(
+  request: Request,
+  db: D1Database,
+  id: string,
+  organizer: OrganizerIdentity,
+): Promise<Response> {
+  const current = await requireEvent(db, id);
   const input = eventPatchSchema.parse(await readJson(request));
+  const correction = requireCorrectionNote(current, input.correctionNote);
 
-  if (input.status && !canTransition(current.status, input.status)) {
-    return apiError(409, "INVALID_TRANSITION", `Cannot move from ${current.status} to ${input.status}.`);
+  if (input.status) {
+    if (isLockedStatus(current.status)) {
+      return apiError(409, "LOCKED_EVENT", "Use the dedicated reopen action for a completed event.");
+    }
+    if (!canTransition(current.status, input.status)) {
+      return apiError(409, "INVALID_TRANSITION", `Cannot move from ${current.status} to ${input.status}.`);
+    }
   }
 
-  const columnMap = {
-    title: "title",
-    startsAt: "starts_at",
-    hostPlayerId: "host_player_id",
-    location: "location",
-    gameNotes: "game_notes",
-    status: "status",
-  } as const;
-  const entries = Object.entries(input) as Array<[keyof typeof columnMap, unknown]>;
-  const assignments = entries.map(([key], index) => `${columnMap[key]} = ?${index + 1}`);
-  const values = entries.map(([, value]) => value);
-  assignments.push(`updated_at = ?${values.length + 1}`);
-  values.push(new Date().toISOString(), id);
+  const updates: string[] = [];
+  const values: unknown[] = [];
+  const before: Record<string, unknown> = {};
+  const after: Record<string, unknown> = {};
+  const setField = (field: string, column: string, currentValue: unknown, value: unknown) => {
+    values.push(value);
+    updates.push(`${column} = ?${values.length}`);
+    before[field] = currentValue;
+    after[field] = value;
+  };
 
-  await db
-    .prepare(`UPDATE events SET ${assignments.join(", ")} WHERE id = ?${values.length}`)
-    .bind(...values)
-    .run();
+  if (input.title !== undefined) setField("title", "title", current.title, input.title);
+  if (input.startsAt !== undefined) setField("startsAt", "starts_at", current.starts_at, input.startsAt);
+  if (input.hostPlayerId !== undefined) {
+    setField("hostPlayerId", "host_player_id", current.host_player_id, input.hostPlayerId);
+  }
+  if (input.location !== undefined) setField("location", "location", current.location, input.location);
+  if (input.gameNotes !== undefined) {
+    setField("gameNotes", "game_notes", current.game_notes, input.gameNotes || null);
+  }
+  if (input.notes !== undefined) setField("notes", "notes", current.notes, input.notes || null);
+  if (input.status !== undefined) setField("status", "status", current.status, input.status);
+
+  const now = new Date().toISOString();
+  values.push(now, id);
+  updates.push(`updated_at = ?${values.length - 1}`);
+  const update = db
+    .prepare(`UPDATE events SET ${updates.join(", ")} WHERE id = ?${values.length}`)
+    .bind(...values);
+
+  if (correction) {
+    await db.batch([
+      update,
+      auditStatement(
+        db,
+        id,
+        organizer,
+        "event_corrected",
+        { correctionNote: correction, changes: changesBetween(before, after) },
+        now,
+      ),
+    ]);
+  } else {
+    await update.run();
+  }
 
   const event = await getEvent(db, id);
   return json({ event: eventJson(event as EventRow) });
 }
 
-async function addEventPlayer(request: Request, db: D1Database, eventId: string): Promise<Response> {
-  await requireEditableEvent(db, eventId);
+async function addEventPlayer(
+  request: Request,
+  db: D1Database,
+  eventId: string,
+  organizer: OrganizerIdentity,
+): Promise<Response> {
+  const event = await requireEvent(db, eventId);
   const input = eventPlayerCreateSchema.parse(await readJson(request));
-  const player = await db
-    .prepare("SELECT id FROM players WHERE id = ?1 AND status = 'active'")
-    .bind(input.playerId)
-    .first<{ id: string }>();
+  const correction = requireCorrectionNote(event, input.correctionNote);
+  const player = await db.prepare("SELECT id, display_name FROM players WHERE id = ?1").bind(input.playerId).first<{
+    id: string;
+    display_name: string;
+  }>();
   if (!player) return apiError(404, "NOT_FOUND", "Player not found.");
 
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
+  const insert = db
+    .prepare(
+      `INSERT INTO event_players
+       (id, event_id, player_id, invitation_status, rsvp_status, attended, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?6)`,
+    )
+    .bind(id, eventId, input.playerId, input.invitationStatus, input.rsvpStatus, now);
+
   try {
-    await db
-      .prepare(
-        `INSERT INTO event_players
-         (id, event_id, player_id, invitation_status, rsvp_status, attended, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?6)`,
-      )
-      .bind(id, eventId, input.playerId, input.invitationStatus, input.rsvpStatus, now)
-      .run();
+    if (correction) {
+      await db.batch([
+        insert,
+        auditStatement(
+          db,
+          eventId,
+          organizer,
+          "event_player_added_correction",
+          { correctionNote: correction, playerId: player.id, playerName: player.display_name },
+          now,
+        ),
+      ]);
+    } else {
+      await insert.run();
+    }
   } catch {
     return apiError(409, "ALREADY_EXISTS", "That player is already on this event.");
   }
@@ -352,38 +533,134 @@ async function patchEventPlayer(
   db: D1Database,
   eventId: string,
   playerId: string,
+  organizer: OrganizerIdentity,
 ): Promise<Response> {
-  await requireEditableEvent(db, eventId);
+  const event = await requireEvent(db, eventId);
   const input = eventPlayerPatchSchema.parse(await readJson(request));
+  const correction = requireCorrectionNote(event, input.correctionNote);
+  const current = await db
+    .prepare(
+      `SELECT ep.*, p.display_name
+       FROM event_players ep
+       JOIN players p ON p.id = ep.player_id
+       WHERE ep.event_id = ?1 AND ep.player_id = ?2`,
+    )
+    .bind(eventId, playerId)
+    .first<EventPlayerRow>();
+  if (!current) return apiError(404, "NOT_FOUND", "Event player not found.");
+
   const updates: string[] = [];
   const values: unknown[] = [];
+  const before: Record<string, unknown> = {};
+  const after: Record<string, unknown> = {};
+  const setField = (field: string, column: string, currentValue: unknown, value: unknown) => {
+    values.push(value);
+    updates.push(`${column} = ?${values.length}`);
+    before[field] = currentValue;
+    after[field] = value;
+  };
 
+  if (input.invitationStatus !== undefined) {
+    setField(
+      "invitationStatus",
+      "invitation_status",
+      current.invitation_status,
+      input.invitationStatus,
+    );
+  }
   if (input.rsvpStatus !== undefined) {
-    values.push(input.rsvpStatus);
-    updates.push(`rsvp_status = ?${values.length}`);
+    setField("rsvpStatus", "rsvp_status", current.rsvp_status, input.rsvpStatus);
   }
   if (input.attended !== undefined) {
-    values.push(input.attended ? 1 : 0);
-    updates.push(`attended = ?${values.length}`);
+    setField("attended", "attended", Boolean(current.attended), input.attended ? 1 : 0);
     values.push(input.attended ? new Date().toISOString() : null);
     updates.push(`checked_in_at = ?${values.length}`);
   }
   if (input.notes !== undefined) {
-    values.push(input.notes);
-    updates.push(`notes = ?${values.length}`);
+    setField("notes", "notes", current.notes, input.notes || null);
   }
-  values.push(new Date().toISOString(), eventId, playerId);
-  updates.push(`updated_at = ?${values.length - 2}`);
 
-  const result = await db
+  const now = new Date().toISOString();
+  values.push(now, eventId, playerId);
+  updates.push(`updated_at = ?${values.length - 2}`);
+  const update = db
     .prepare(
       `UPDATE event_players SET ${updates.join(", ")}
        WHERE event_id = ?${values.length - 1} AND player_id = ?${values.length}`,
     )
-    .bind(...values)
-    .run();
+    .bind(...values);
 
-  if (!result.meta.changes) return apiError(404, "NOT_FOUND", "Event player not found.");
+  if (correction) {
+    await db.batch([
+      update,
+      auditStatement(
+        db,
+        eventId,
+        organizer,
+        "event_player_corrected",
+        {
+          correctionNote: correction,
+          playerId,
+          playerName: current.display_name,
+          changes: changesBetween(before, after),
+        },
+        now,
+      ),
+    ]);
+  } else {
+    await update.run();
+  }
+
+  return eventDetail(db, eventId);
+}
+
+async function removeEventPlayer(
+  request: Request,
+  db: D1Database,
+  eventId: string,
+  playerId: string,
+  organizer: OrganizerIdentity,
+): Promise<Response> {
+  const event = await requireEvent(db, eventId);
+  const input = eventPlayerDeleteSchema.parse(await readJson(request));
+  const correction = requireCorrectionNote(event, input.correctionNote);
+  const current = await db
+    .prepare(
+      `SELECT ep.*, p.display_name
+       FROM event_players ep
+       JOIN players p ON p.id = ep.player_id
+       WHERE ep.event_id = ?1 AND ep.player_id = ?2`,
+    )
+    .bind(eventId, playerId)
+    .first<EventPlayerRow>();
+  if (!current) return apiError(404, "NOT_FOUND", "Event player not found.");
+
+  const now = new Date().toISOString();
+  const remove = db
+    .prepare("DELETE FROM event_players WHERE event_id = ?1 AND player_id = ?2")
+    .bind(eventId, playerId);
+
+  if (correction) {
+    await db.batch([
+      remove,
+      auditStatement(
+        db,
+        eventId,
+        organizer,
+        "event_player_removed_correction",
+        {
+          correctionNote: correction,
+          playerId,
+          playerName: current.display_name,
+          attended: Boolean(current.attended),
+        },
+        now,
+      ),
+    ]);
+  } else {
+    await remove.run();
+  }
+
   return eventDetail(db, eventId);
 }
 
@@ -407,23 +684,52 @@ async function completeEvent(
          WHERE id = ?2 AND status = 'active'`,
       )
       .bind(now, id),
-    db
-      .prepare(
-        `INSERT INTO event_audit_log
-         (id, event_id, organizer_id, action, details_json, created_at)
-         VALUES (?1, ?2, ?3, 'event_completed', ?4, ?5)`,
-      )
-      .bind(
-        crypto.randomUUID(),
-        id,
-        organizer.id,
-        JSON.stringify({ attendanceCount: event.attendance_count ?? 0 }),
-        now,
-      ),
+    auditStatement(
+      db,
+      id,
+      organizer,
+      "event_completed",
+      { attendanceCount: event.attendance_count ?? 0 },
+      now,
+    ),
   ]);
 
   const completed = await getEvent(db, id);
   return json({ event: eventJson(completed as EventRow) });
+}
+
+async function reopenEvent(
+  request: Request,
+  db: D1Database,
+  id: string,
+  organizer: OrganizerIdentity,
+): Promise<Response> {
+  const event = await requireEvent(db, id);
+  if (event.status !== "completed") {
+    return apiError(409, "INVALID_TRANSITION", "Only a completed event can be reopened.");
+  }
+  const input = eventReopenSchema.parse(await readJson(request));
+  const now = new Date().toISOString();
+
+  await db.batch([
+    db
+      .prepare(
+        `UPDATE events
+         SET status = 'active', completed_at = NULL, updated_at = ?1
+         WHERE id = ?2 AND status = 'completed'`,
+      )
+      .bind(now, id),
+    auditStatement(
+      db,
+      id,
+      organizer,
+      "event_reopened",
+      { correctionNote: input.correctionNote, previousStatus: "completed" },
+      now,
+    ),
+  ]);
+
+  return eventDetail(db, id);
 }
 
 export const onRequest: AppPagesFunction = async (context) => {
@@ -440,11 +746,12 @@ export const onRequest: AppPagesFunction = async (context) => {
       return dashboard(context.env.DB);
     }
     if (parts[0] === "players" && parts.length === 1) {
-      if (method === "GET") return listPlayers(context.env.DB);
+      if (method === "GET") return listPlayers(request, context.env.DB);
       if (method === "POST") return createPlayer(request, context.env.DB);
     }
-    if (method === "GET" && parts[0] === "players" && parts[1] && parts.length === 2) {
-      return playerDetail(context.env.DB, parts[1]);
+    if (parts[0] === "players" && parts[1] && parts.length === 2) {
+      if (method === "GET") return playerDetail(context.env.DB, parts[1]);
+      if (method === "PATCH") return patchPlayer(request, context.env.DB, parts[1]);
     }
     if (parts[0] === "events" && parts.length === 1) {
       if (method === "GET") return listEvents(request, context.env.DB);
@@ -452,27 +759,26 @@ export const onRequest: AppPagesFunction = async (context) => {
     }
     if (parts[0] === "events" && parts[1] && parts.length === 2) {
       if (method === "GET") return eventDetail(context.env.DB, parts[1]);
-      if (method === "PATCH") return patchEvent(request, context.env.DB, parts[1]);
+      if (method === "PATCH") {
+        return patchEvent(request, context.env.DB, parts[1], context.data.organizer);
+      }
     }
     if (method === "POST" && parts[0] === "events" && parts[2] === "players" && parts.length === 3) {
-      return addEventPlayer(request, context.env.DB, parts[1]);
+      return addEventPlayer(request, context.env.DB, parts[1], context.data.organizer);
     }
-    if (
-      method === "PATCH" &&
-      parts[0] === "events" &&
-      parts[2] === "players" &&
-      parts[3] &&
-      parts.length === 4
-    ) {
-      return patchEventPlayer(request, context.env.DB, parts[1], parts[3]);
+    if (parts[0] === "events" && parts[2] === "players" && parts[3] && parts.length === 4) {
+      if (method === "PATCH") {
+        return patchEventPlayer(request, context.env.DB, parts[1], parts[3], context.data.organizer);
+      }
+      if (method === "DELETE") {
+        return removeEventPlayer(request, context.env.DB, parts[1], parts[3], context.data.organizer);
+      }
     }
-    if (
-      method === "POST" &&
-      parts[0] === "events" &&
-      parts[2] === "complete" &&
-      parts.length === 3
-    ) {
+    if (method === "POST" && parts[0] === "events" && parts[2] === "complete" && parts.length === 3) {
       return completeEvent(context.env.DB, parts[1], context.data.organizer);
+    }
+    if (method === "POST" && parts[0] === "events" && parts[2] === "reopen" && parts.length === 3) {
+      return reopenEvent(request, context.env.DB, parts[1], context.data.organizer);
     }
 
     return apiError(404, "NOT_FOUND", "API route not found.");
