@@ -1,6 +1,6 @@
 # Private RSVP rollout
 
-This release adds passwordless, player-specific RSVP links. The organizer application remains protected by Cloudflare Access. Only the public RSVP page and its narrowly scoped API are bypassed.
+This release adds passwordless, player-specific RSVP links. The organizer application remains protected by Cloudflare Access. Only the public RSVP page, its API, and static frontend assets are bypassed.
 
 ## 1. Apply migration 0004
 
@@ -18,13 +18,14 @@ Confirm that `0004_private_rsvp_links.sql` was applied. The migration adds:
 
 The production health banner remains active until schema version 4 is present.
 
-## 2. Add two path-specific Cloudflare Access applications
+## 2. Add three path-specific Cloudflare Access applications
 
 In Zero Trust, create self-hosted Access applications for these exact paths:
 
 ```text
 poker.skpfam.com/rsvp/*
 poker.skpfam.com/rsvp-api/*
+poker.skpfam.com/assets/*
 ```
 
 For each application, add a policy with:
@@ -33,6 +34,8 @@ For each application, add a policy with:
 Action: Bypass
 Selector: Everyone
 ```
+
+The `/assets/*` bypass exposes only the compiled JavaScript and CSS needed to render the public RSVP page. It does not bypass any API or expose organizer data.
 
 Do not bypass any of these paths:
 
@@ -63,7 +66,7 @@ Raw tokens are returned only when generated. D1 stores SHA-256 token hashes, not
 Use an incognito window that is not logged into Cloudflare Access.
 
 1. Open a freshly generated `/rsvp/<token>` link.
-2. Confirm the page loads without an organizer login.
+2. Confirm the page and its styling load without an organizer login.
 3. Submit Yes, Maybe, or No.
 4. Confirm the organizer RSVP summary updates.
 5. Confirm the event audit history contains `public rsvp updated` by `Public RSVP service`.
