@@ -13,9 +13,7 @@ export interface HealthReport {
 }
 
 export function eventIdFromPath(pathname: string): string | null {
-  const match = pathname.match(
-    /^\/(?:events|ops\/events|money\/events|rsvp\/events)\/([0-9a-f-]+)(?:\/|$)/iu,
-  );
+  const match = pathname.match(/^\/(?:events|ops\/events|money\/events)\/([0-9a-f-]+)(?:\/|$)/iu);
   return match?.[1] ?? null;
 }
 
