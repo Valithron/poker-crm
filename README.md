@@ -34,8 +34,9 @@ Create `.dev.vars` and seed a local organizer before starting the application. S
 - Build output directory: `dist`
 - Root directory: leave blank
 - Production branch: `main`
+- Bindings source of truth: Cloudflare dashboard
 
-The Production environment needs one D1 binding named `DB`, pointing to `brotm-poker`. Bindings are managed in the Cloudflare dashboard.
+The Production environment needs one D1 binding named `DB`, pointing to `brotm-poker`. The repository intentionally contains no Pages Wrangler configuration file.
 
 ## Documentation
 
