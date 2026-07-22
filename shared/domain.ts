@@ -65,7 +65,8 @@ const allowedTransitions: Record<EventStatus, readonly EventStatus[]> = {
 };
 
 export function canTransition(from: EventStatus, to: EventStatus): boolean {
-  return from === to || allowedTransitions[from].includes(to);
+  const allowed: readonly EventStatus[] = allowedTransitions[from];
+  return from === to || allowed.includes(to);
 }
 
 export function countAttendance(rows: Array<{ attended: boolean | number }>): number {
