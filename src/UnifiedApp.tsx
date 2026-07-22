@@ -10,6 +10,7 @@ import { App } from "./App";
 import { api, ApiError } from "./api";
 import { MoneyEventPage, PlayerMoneyPage } from "./Money";
 import { OperationsApp } from "./Operations";
+import { RsvpAdminPage } from "./Rsvp";
 import type { Organizer } from "./types";
 
 function errorMessage(error: unknown): string {
@@ -27,6 +28,7 @@ function ViewRouter() {
     <Routes>
       <Route path="/money/events/:id" element={<MoneyEventPage />} />
       <Route path="/money/players/:id" element={<PlayerMoneyPage />} />
+      <Route path="/rsvp/events/:id" element={<RsvpAdminPage />} />
       <Route path="*" element={<App />} />
     </Routes>
   );
@@ -129,6 +131,7 @@ export function UnifiedApp() {
         <nav className="event-workspace-nav" aria-label="Poker night sections">
           <Link className={location.pathname === `/events/${eventId}` ? "active" : ""} to={`/events/${eventId}`}>Details & live</Link>
           <Link className={location.pathname === `/ops/events/${eventId}` ? "active" : ""} to={`/ops/events/${eventId}`}>Invites & RSVP</Link>
+          <Link className={location.pathname === `/rsvp/events/${eventId}` ? "active" : ""} to={`/rsvp/events/${eventId}`}>RSVP links</Link>
           <Link className={location.pathname === `/money/events/${eventId}` ? "active" : ""} to={`/money/events/${eventId}`}>Money</Link>
         </nav>
       ) : null}
