@@ -13,11 +13,15 @@ interface AccessJwtPayload {
   sub: string;
 }
 
-interface AccessCertsResponse {
-  keys: JsonWebKey[];
+interface AccessJwk extends JsonWebKey {
+  kid?: string;
 }
 
-let certCache: { expiresAt: number; keys: JsonWebKey[] } | undefined;
+interface AccessCertsResponse {
+  keys: AccessJwk[];
+}
+
+let certCache: { expiresAt: number; keys: AccessJwk[] } | undefined;
 
 function decodePart<T>(part: string): T {
   const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
@@ -28,15 +32,18 @@ function decodePart<T>(part: string): T {
   return JSON.parse(new TextDecoder().decode(bytes)) as T;
 }
 
-function decodeSignature(part: string): Uint8Array {
+function decodeSignature(part: string): ArrayBuffer {
   const normalized = part.replace(/-/g, "+").replace(/_/g, "/");
   const padding = "=".repeat((4 - (normalized.length % 4)) % 4);
-  return Uint8Array.from(atob(normalized + padding), (character) =>
+  const bytes = Uint8Array.from(atob(normalized + padding), (character) =>
     character.charCodeAt(0),
   );
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
 }
 
-async function getSigningKeys(teamDomain: string): Promise<JsonWebKey[]> {
+async function getSigningKeys(teamDomain: string): Promise<AccessJwk[]> {
   const now = Date.now();
   if (certCache && certCache.expiresAt > now) return certCache.keys;
 
