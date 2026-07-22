@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   check:
@@ -31,7 +33,29 @@ jobs:
         run: npm run lint
 
       - name: Typecheck
-        run: npm run typecheck
+        id: typecheck
+        continue-on-error: true
+        run: npm run typecheck > typecheck.log 2>&1
+
+      - name: Report typecheck diagnostics
+        if: steps.typecheck.outcome == 'failure' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '### TypeScript diagnostics'
+            echo
+            echo '```text'
+            cat typecheck.log
+            echo '```'
+          } > typecheck-comment.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file typecheck-comment.md
+
+      - name: Enforce typecheck
+        if: steps.typecheck.outcome == 'failure'
+        run: |
+          cat typecheck.log
+          exit 1
 
       - name: Run tests
         run: npm run test
