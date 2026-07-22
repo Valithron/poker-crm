@@ -1,6 +1,6 @@
 {
   "name": "brotm-poker",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Private organizer application for BroTM Poker nights.",
@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
-    "db:migrate:local": "wrangler d1 migrations apply brotm-poker --local",
-    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker --remote"
+    "db:migrate:local": "wrangler d1 migrations apply brotm-poker --local --config wrangler.local.jsonc",
+    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker --remote --config wrangler.local.jsonc"
   },
   "dependencies": {
     "react": "^19.2.0",
