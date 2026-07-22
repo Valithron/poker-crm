@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
-    "db:migrate:local": "wrangler d1 migrations apply brotm-poker-dev --local",
-    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker-production --remote"
+    "db:migrate:local": "wrangler d1 migrations apply brotm-poker --local",
+    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker --remote"
   },
   "dependencies": {
     "react": "^19.2.0",

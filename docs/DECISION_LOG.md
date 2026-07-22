@@ -21,3 +21,10 @@ Sterling approved the following direction:
 - Pages Functions form the server-side API.
 - Cloudflare Access is the MVP authentication boundary.
 - API routes independently validate the Access JWT and organizer authorization.
+
+## 2026-07-22: One remote D1 database
+
+- Production uses one remote D1 database named `brotm-poker`.
+- Local development uses Wrangler local D1 storage and consumes no remote database slot.
+- Preview deployments do not bind to production data.
+- Pages bindings are managed in the Cloudflare dashboard rather than a deployed `wrangler.toml`.
