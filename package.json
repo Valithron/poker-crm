@@ -1,14 +1,15 @@
 {
-  "name": "poker-crm",
-  "version": "1.0.0",
-  "description": "A BroTime poker night CRM system to keep track of attendees and invites.",
+  "name": "brotm-poker",
+  "version": "2.0.0",
   "private": true,
+  "type": "module",
+  "description": "Fresh Cloudflare Pages foundation for BroTM Poker.",
   "scripts": {
-    "start": "firebase serve",
-    "deploy": "firebase deploy",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/validate.mjs",
+    "check": "npm run test && npm run build"
   },
-  "devDependencies": {
-    "firebase-tools": "^12.6.1"
+  "engines": {
+    "node": ">=22"
   }
 }
