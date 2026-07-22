@@ -188,7 +188,9 @@ function PlayersPage() {
       .then((response) => setPlayers(response.players))
       .catch(setError);
 
-  useEffect(load, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
