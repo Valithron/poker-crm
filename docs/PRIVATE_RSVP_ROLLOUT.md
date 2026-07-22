@@ -40,12 +40,14 @@ The `/assets/*` bypass exposes only the compiled JavaScript and CSS needed to re
 Do not bypass any of these paths:
 
 ```text
-/rsvp/events/*
+/events/*
 /rsvp-admin-api/*
 /api/*
 /ops-api/*
 /money-api/*
 ```
+
+Organizer link management is located at `/events/<event-id>/rsvp-links`, outside the public `/rsvp/*` path.
 
 The path-specific applications must be more specific than the existing organizer application protecting `poker.skpfam.com`.
 
