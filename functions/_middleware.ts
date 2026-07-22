@@ -3,7 +3,8 @@ import { apiError } from "./lib/http";
 import type { AppPagesFunction } from "./lib/types";
 
 export const onRequest: AppPagesFunction = async (context) => {
-  if (!new URL(context.request.url).pathname.startsWith("/api/")) {
+  const pathname = new URL(context.request.url).pathname;
+  if (!pathname.startsWith("/api/") && !pathname.startsWith("/money-api/")) {
     return context.next();
   }
 
