@@ -11,6 +11,7 @@ export interface Env {
   POLICY_AUD: string;
   ENVIRONMENT?: string;
   DEV_ORGANIZER_EMAIL?: string;
+  CF_PAGES_COMMIT_SHA?: string;
 }
 
 export interface FunctionData extends Record<string, unknown> {
