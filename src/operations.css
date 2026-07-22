@@ -226,7 +226,8 @@
 
 .operations-shortcut {
   position: fixed;
-  right: max(1rem, env(safe-area-inset-right));
+  left: max(1rem, env(safe-area-inset-left));
+  right: auto;
   bottom: max(1rem, env(safe-area-inset-bottom));
   z-index: 50;
   display: inline-flex;
@@ -282,6 +283,6 @@
   .operations-shortcut {
     left: 0.75rem;
     right: 0.75rem;
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4rem);
   }
 }
