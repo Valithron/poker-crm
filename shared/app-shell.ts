@@ -1,5 +1,5 @@
-export const APP_VERSION = "2.2.0";
-export const REQUIRED_SCHEMA_VERSION = 3;
+export const APP_VERSION = "2.3.0";
+export const REQUIRED_SCHEMA_VERSION = 4;
 
 export interface HealthReport {
   ok: boolean;
@@ -13,7 +13,7 @@ export interface HealthReport {
 }
 
 export function eventIdFromPath(pathname: string): string | null {
-  const match = pathname.match(/^\/(?:events|ops\/events|money\/events)\/([0-9a-f-]+)(?:\/|$)/i);
+  const match = pathname.match(/^\/(?:events|ops\/events|money\/events)\/([0-9a-f-]+)(?:\/|$)/iu);
   return match?.[1] ?? null;
 }
 

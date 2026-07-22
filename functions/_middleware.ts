@@ -7,7 +7,8 @@ export const onRequest: AppPagesFunction = async (context) => {
   if (
     !pathname.startsWith("/api/") &&
     !pathname.startsWith("/money-api/") &&
-    !pathname.startsWith("/ops-api/")
+    !pathname.startsWith("/ops-api/") &&
+    !pathname.startsWith("/rsvp-admin-api/")
   ) {
     return context.next();
   }

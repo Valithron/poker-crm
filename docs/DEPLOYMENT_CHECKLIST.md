@@ -20,6 +20,7 @@ npm run db:migrate:remote
    - no missing tables
    - no missing columns
    - `schemaVersion` greater than or equal to `requiredSchemaVersion`
+8. When the release changes public RSVP behavior, verify the path-specific Access applications described in `PRIVATE_RSVP_ROLLOUT.md`.
 
 ## After merge
 
@@ -32,11 +33,13 @@ npm run db:migrate:remote
    - night creation
    - roster and attendance
    - invite and RSVP view
+   - private RSVP link generation and revocation
+   - public RSVP response from a browser without organizer access
    - money ledger
    - closeout
-   - history
+   - history and RSVP audit entry
    - settings
-5. On a phone-sized viewport, verify the bottom navigation, event workspace tabs, large money controls, and sticky closeout totals.
+5. On a phone-sized viewport, verify the bottom navigation, event workspace tabs, public RSVP controls, large money controls, and sticky closeout totals.
 
 ## Failure behavior
 
