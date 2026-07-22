@@ -1,25 +1,63 @@
 # BroTM Poker
 
-A clean Cloudflare Pages foundation for the next version of the private BroTM Poker application.
+A private, mobile-first organizer application for planning, running, and closing recurring home poker nights.
 
-The previous Firebase-hosted CRM prototype has been intentionally retired from this branch. Historical attendance and earnings data are not migration requirements.
+## Current slice
 
-## Local validation
+The v2 organizer foundation supports:
+
+- Cloudflare Access-backed organizer identity
+- player creation and directory browsing
+- draft poker-night creation
+- event rosters and RSVP status
+- live attendance check-in
+- controlled event status transitions
+- event completion and history
+
+Money tracking, automatic invitations, player accounts, and analytics are intentionally later phases.
+
+## Stack
+
+- Cloudflare Pages
+- Cloudflare Pages Functions
+- Cloudflare D1
+- Cloudflare Access
+- React
+- TypeScript
+- Vite
+- Zod
+- Vitest
+
+## Install and validate
 
 ```bash
 npm install
 npm run check
 ```
 
-The build writes the deployable site to `dist/`.
+The production build writes to `dist/`.
+
+## Local development
+
+Apply the initial migration and add a development organizer before starting Pages Functions. See [`docs/CLOUDFLARE_V2_SETUP.md`](docs/CLOUDFLARE_V2_SETUP.md).
+
+```bash
+npm run build
+npm run dev
+```
+
+For frontend-only styling work:
+
+```bash
+npm run dev:web
+```
 
 ## Cloudflare Pages
 
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Root directory: leave blank
-- Environment variables: none
+- D1 binding: `DB`
+- Required variables: `TEAM_DOMAIN`, `POLICY_AUD`, `ENVIRONMENT`
 
-See [`docs/CLOUDFLARE_PAGES_SETUP.md`](docs/CLOUDFLARE_PAGES_SETUP.md) for the dashboard setup and cutover procedure.
-
-See [`docs/PRODUCT_RESET.md`](docs/PRODUCT_RESET.md) for the boundary between this hosting migration and the upcoming product redesign.
+Production: `https://poker.skpfam.com`
