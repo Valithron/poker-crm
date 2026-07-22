@@ -1,0 +1,380 @@
+.money-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 90% 0, rgba(215, 178, 103, 0.12), transparent 28rem),
+    var(--bg);
+}
+
+.money-topbar {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem max(1rem, calc((100vw - 1180px) / 2));
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 12, 9, 0.94);
+}
+
+.money-topbar > span {
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.money-page {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3.5rem) 0 6rem;
+}
+
+.money-page > * + * {
+  margin-top: 1rem;
+}
+
+.money-page-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.money-page-header h1 {
+  margin: 0;
+  font-size: clamp(2.3rem, 8vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.money-page-header p:not(.eyebrow) {
+  max-width: 56rem;
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+}
+
+.money-correction-panel,
+.closeout-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+  gap: 1rem;
+  align-items: end;
+}
+
+.money-correction-panel p,
+.closeout-panel p,
+.closeout-panel ul,
+.ledger-help {
+  color: var(--muted);
+}
+
+.money-correction-panel label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.money-settings-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(180px, 0.45fr) minmax(0, 1.1fr) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.money-settings-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.toggle-field {
+  min-height: 44px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #0d100c;
+}
+
+.toggle-field input {
+  width: 20px;
+  min-height: 20px;
+  margin: 0;
+}
+
+.money-settings-wide {
+  min-width: 0;
+}
+
+.money-total-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.money-total-grid .metric-card {
+  min-height: 125px;
+}
+
+.money-total-grid .metric-card strong {
+  font-size: clamp(1.45rem, 4vw, 2.4rem);
+}
+
+.metric-card.is-balanced {
+  border-color: rgba(150, 199, 136, 0.42);
+}
+
+.metric-card.is-unbalanced {
+  border-color: rgba(224, 121, 116, 0.55);
+}
+
+.closeout-panel.is-ready {
+  border-color: rgba(150, 199, 136, 0.5);
+}
+
+.closeout-panel.has-issues {
+  border-color: rgba(224, 121, 116, 0.55);
+}
+
+.closeout-panel ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.money-player-list,
+.ledger-entry-list,
+.player-money-history {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.money-player-card,
+.ledger-entry-card,
+.player-money-history-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.money-player-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.money-player-card.is-attending {
+  border-color: rgba(150, 199, 136, 0.45);
+  background: rgba(150, 199, 136, 0.065);
+}
+
+.money-player-heading,
+.ledger-entry-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.money-player-heading > div,
+.ledger-entry-heading > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.money-player-heading small,
+.ledger-entry-heading small,
+.player-money-history-card small {
+  color: var(--muted);
+}
+
+.money-player-heading > strong,
+.ledger-entry-heading > strong,
+.net-positive,
+.net-negative,
+.net-zero {
+  font-size: 1.2rem;
+}
+
+.net-positive {
+  color: var(--green);
+}
+
+.net-negative {
+  color: var(--red);
+}
+
+.net-zero {
+  color: var(--muted);
+}
+
+.money-player-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.money-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.ledger-entry-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.ledger-edit-grid {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.35fr) minmax(140px, 0.35fr) minmax(0, 1fr);
+  gap: 0.7rem;
+}
+
+.ledger-edit-grid label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.ledger-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.ledger-help {
+  margin: -0.2rem 0 1rem;
+  font-size: 0.9rem;
+}
+
+.player-money-history-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem 1rem;
+  padding: 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.player-money-history-card:hover {
+  border-color: rgba(215, 178, 103, 0.55);
+}
+
+.player-money-history-card > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.player-money-history-card > div:nth-child(2) {
+  justify-items: end;
+}
+
+.player-money-history-card > div span {
+  color: var(--muted);
+}
+
+.player-money-history-card small {
+  grid-column: 1 / -1;
+}
+
+.money-shortcut {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 60;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(215, 178, 103, 0.55);
+  border-radius: 999px;
+  background: var(--gold);
+  color: #171108;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .money-settings-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .money-settings-wide {
+    grid-column: 1 / -1;
+  }
+
+  .money-total-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .money-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ledger-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ledger-note-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .money-page {
+    width: min(100% - 1rem, 1180px);
+  }
+
+  .money-page-header,
+  .money-correction-panel,
+  .closeout-panel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .money-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .money-settings-form,
+  .money-total-grid,
+  .ledger-edit-grid,
+  .player-money-history-card {
+    grid-template-columns: 1fr;
+  }
+
+  .money-settings-wide,
+  .ledger-note-field,
+  .player-money-history-card small {
+    grid-column: auto;
+  }
+
+  .money-player-heading,
+  .ledger-entry-heading {
+    align-items: start;
+  }
+
+  .money-action-grid .button,
+  .ledger-entry-actions .button {
+    width: 100%;
+  }
+
+  .player-money-history-card > div:nth-child(2) {
+    justify-items: start;
+  }
+}
