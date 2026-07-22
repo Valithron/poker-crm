@@ -13,7 +13,7 @@ export interface Env {
   DEV_ORGANIZER_EMAIL?: string;
 }
 
-export interface FunctionData {
+export interface FunctionData extends Record<string, unknown> {
   organizer: OrganizerIdentity;
 }
 
