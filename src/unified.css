@@ -1,0 +1,221 @@
+.unified-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 92% -10%, rgba(215, 178, 103, 0.11), transparent 32rem),
+    var(--bg);
+}
+
+.unified-topbar {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem max(1rem, calc((100vw - 1180px) / 2));
+  border-bottom: 1px solid var(--line);
+  background: rgba(9, 11, 8, 0.96);
+}
+
+.unified-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unified-nav {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  padding-inline: max(1rem, calc((100vw - 1180px) / 2));
+  background: rgba(9, 11, 8, 0.96);
+  backdrop-filter: blur(16px);
+}
+
+.unified-main {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem) 0 7rem;
+}
+
+/* Existing feature surfaces remain responsible for their content while the
+   unified shell owns branding, navigation, spacing, and deployment status. */
+.unified-main > .app-shell,
+.unified-main > .operations-shell,
+.unified-main > .money-shell,
+.unified-main .money-shell {
+  min-height: 0;
+  background: transparent;
+}
+
+.unified-main > .app-shell > .topbar,
+.unified-main > .app-shell > .primary-nav,
+.unified-main > .operations-shell > .topbar,
+.unified-main > .operations-shell > .primary-nav,
+.unified-main .money-shell > .money-topbar {
+  display: none;
+}
+
+.unified-main > .app-shell > .page-container,
+.unified-main > .operations-shell > .operations-container,
+.unified-main .money-shell > .money-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.unified-main .money-page-header {
+  margin-top: 0;
+}
+
+.event-workspace-nav {
+  display: flex;
+  gap: 0.35rem;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1rem auto 0;
+  padding: 0.35rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.event-workspace-nav a {
+  min-height: 42px;
+  display: inline-flex;
+  flex: 1 0 max-content;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 0.9rem;
+  border-radius: 9px;
+  color: var(--muted);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.event-workspace-nav a:hover,
+.event-workspace-nav a.active {
+  background: var(--surface-strong, #1b2119);
+  color: var(--text);
+}
+
+.deployment-warning {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1rem auto 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(224, 121, 116, 0.65);
+  border-radius: 12px;
+  background: rgba(224, 121, 116, 0.08);
+  color: var(--text);
+}
+
+.deployment-warning span {
+  color: var(--muted);
+}
+
+.deployment-warning code {
+  color: var(--red);
+}
+
+.unified-footer {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 1.25rem 0 calc(1.25rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.health-ready {
+  color: var(--green);
+}
+
+.health-warning {
+  color: var(--red);
+}
+
+/* The old floating cross-app shortcuts are replaced by permanent navigation. */
+.unified-shell .money-shortcut,
+.unified-shell .operations-shortcut {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .unified-topbar {
+    min-height: 64px;
+  }
+
+  .unified-plan-button,
+  .unified-topbar .organizer-chip small {
+    display: none;
+  }
+
+  .unified-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 80;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0;
+    padding: 0.35rem max(0.35rem, env(safe-area-inset-right)) calc(0.35rem + env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
+
+  .unified-nav a {
+    min-width: 0;
+    min-height: 50px;
+    padding: 0.45rem 0.15rem;
+    font-size: 0.68rem;
+    text-align: center;
+  }
+
+  .unified-main {
+    width: min(100% - 1rem, 1180px);
+    padding-top: 1rem;
+    padding-bottom: 7.5rem;
+  }
+
+  .event-workspace-nav,
+  .deployment-warning,
+  .unified-footer {
+    width: min(100% - 1rem, 1180px);
+  }
+
+  .deployment-warning {
+    grid-template-columns: 1fr;
+  }
+
+  .money-total-grid {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 30;
+    padding: 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(9, 11, 8, 0.94);
+    backdrop-filter: blur(16px);
+  }
+
+  .money-action-grid .button {
+    min-height: 54px;
+    font-size: 0.95rem;
+  }
+
+  .live-roster .event-player-editor,
+  .money-player-card {
+    scroll-margin-top: 7rem;
+  }
+
+  .unified-footer {
+    padding-bottom: 6.5rem;
+  }
+}
