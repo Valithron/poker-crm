@@ -1,75 +1,70 @@
 # Cloudflare v2 setup
 
-This guide connects the first BroTM Poker application slice to D1 and Cloudflare Access without committing account identifiers or personal email addresses.
+This guide connects the first BroTM Poker application slice to one remote D1 database and Cloudflare Access without committing account identifiers or personal email addresses.
 
-## 1. Create D1 databases
+## 1. Create one D1 database
 
-Create separate databases for preview/development and production.
+Create one remote database:
 
 ```bash
-npx wrangler d1 create brotm-poker-dev
-npx wrangler d1 create brotm-poker-production
+npx wrangler d1 create brotm-poker
 ```
 
-Keep the returned database IDs in Cloudflare configuration. Do not commit them to the repository.
+This consumes one Cloudflare D1 database slot.
+
+Local development uses Wrangler's local D1 storage and does not consume another remote database slot.
 
 ## 2. Apply migrations
+
+Local development database:
+
+```bash
+npm run db:migrate:local
+```
+
+Remote production database:
+
+```bash
+npm run db:migrate:remote
+```
+
+Both commands apply the committed migrations in `migrations/`.
+
+The local database is stored under `.wrangler/state` and is separate from production.
+
+## 3. Add the first organizer
+
+Generate a UUID locally or use any standards-compliant UUID generator. Replace every placeholder before running.
 
 Local development:
 
 ```bash
-npx wrangler d1 migrations apply brotm-poker-dev --local
-```
-
-Remote preview/development database:
-
-```bash
-npx wrangler d1 migrations apply brotm-poker-dev --remote
-```
-
-Production database:
-
-```bash
-npx wrangler d1 migrations apply brotm-poker-production --remote
-```
-
-## 3. Add the first organizer
-
-Generate UUIDs locally or use any standards-compliant UUID generator. Replace every placeholder before running.
-
-Development:
-
-```bash
-npx wrangler d1 execute brotm-poker-dev --remote --command "INSERT INTO organizers (id, email, display_name, role, active, created_at, updated_at) VALUES ('<UUID>', '<ORGANIZER_EMAIL>', '<DISPLAY_NAME>', 'admin', 1, datetime('now'), datetime('now'));"
+npx wrangler d1 execute brotm-poker --local --command "INSERT INTO organizers (id, email, display_name, role, active, created_at, updated_at) VALUES ('<UUID>', '<ORGANIZER_EMAIL>', '<DISPLAY_NAME>', 'admin', 1, datetime('now'), datetime('now'));"
 ```
 
 Production:
 
 ```bash
-npx wrangler d1 execute brotm-poker-production --remote --command "INSERT INTO organizers (id, email, display_name, role, active, created_at, updated_at) VALUES ('<UUID>', '<ORGANIZER_EMAIL>', '<DISPLAY_NAME>', 'admin', 1, datetime('now'), datetime('now'));"
+npx wrangler d1 execute brotm-poker --remote --command "INSERT INTO organizers (id, email, display_name, role, active, created_at, updated_at) VALUES ('<UUID>', '<ORGANIZER_EMAIL>', '<DISPLAY_NAME>', 'admin', 1, datetime('now'), datetime('now'));"
 ```
 
 The organizer email must exactly match the email authenticated by Cloudflare Access. Matching is case-insensitive.
 
 ## 4. Bind D1 to Pages
 
-In the Cloudflare dashboard, open the Git-integrated Pages project.
+The repository does not use a deployed `wrangler.toml`, so Pages bindings remain editable in the Cloudflare dashboard.
 
-For **Preview**:
+In the Pages project:
 
 1. Open **Settings**.
-2. Open **Bindings**.
-3. Add a D1 database binding.
-4. Variable name: `DB`.
-5. Database: `brotm-poker-dev`.
+2. Choose the **Production** environment.
+3. Open **Bindings**.
+4. Select **Add** and choose **D1 database**.
+5. Variable name: `DB`.
+6. Database: `brotm-poker`.
+7. Save and redeploy the production branch.
 
-For **Production**:
-
-1. Switch the environment selector to Production.
-2. Add the same `DB` binding.
-3. Database: `brotm-poker-production`.
-
-Preview deployments must never bind to the production database.
+Do not bind the production database to Preview deployments. Preview builds can validate and display the frontend, while complete database-backed workflow testing is performed locally.
 
 ## 5. Configure Cloudflare Access
 
@@ -86,11 +81,13 @@ Do not commit either value.
 
 ## 6. Add Pages variables
 
-Add these plain-text variables to both Preview and Production, using the proper values for each environment:
+For the **Production** environment, add:
 
 - `TEAM_DOMAIN`: the Zero Trust team domain without `https://`
 - `POLICY_AUD`: the Access application audience tag
-- `ENVIRONMENT`: `preview` or `production`
+- `ENVIRONMENT`: `production`
+
+For **Preview**, `ENVIRONMENT=preview` may be set, but no production D1 binding should be attached.
 
 The API validates the signed `Cf-Access-Jwt-Assertion` header, issuer, audience, expiry, signature, and organizer database record.
 
@@ -128,9 +125,10 @@ npm run dev
 - Access challenges an unauthenticated visit to `poker.skpfam.com`.
 - An approved organizer reaches the application.
 - An authenticated but unregistered email receives a forbidden message.
+- The Production environment has one D1 binding named `DB` pointing to `brotm-poker`.
+- `ENVIRONMENT` is `production`, not `development`.
 - A player can be created.
 - A draft event can be created.
 - A player can be added and checked in.
 - The event can move from draft to open to active to completed.
 - The completed event appears in History.
-- Preview data does not appear in production.
