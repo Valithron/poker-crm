@@ -1,15 +1,40 @@
 {
   "name": "brotm-poker",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
-  "description": "Fresh Cloudflare Pages foundation for BroTM Poker.",
+  "description": "Private organizer application for BroTM Poker nights.",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "test": "node scripts/validate.mjs",
-    "check": "npm run test && npm run build"
+    "dev": "wrangler pages dev dist --d1=DB --compatibility-date=2026-07-21",
+    "dev:web": "vite",
+    "build": "vite build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "node scripts/lint.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:migrate:local": "wrangler d1 migrations apply brotm-poker-dev --local",
+    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker-production --remote"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.0",
+    "zod": "^4.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260721.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.1.0",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.50.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   }
 }
