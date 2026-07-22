@@ -1,4 +1,4 @@
-import type { EventStatus, RsvpStatus } from "../shared/domain";
+import type { EventStatus, InvitationStatus, RsvpStatus } from "../shared/domain";
 
 export interface Organizer {
   id: string;
@@ -28,6 +28,7 @@ export interface PokerEvent {
   hostName: string | null;
   location: string;
   gameNotes: string | null;
+  notes: string | null;
   status: EventStatus;
   attendanceCount: number;
   playerCount: number;
@@ -41,11 +42,19 @@ export interface EventPlayer {
   eventId: string;
   playerId: string;
   displayName: string;
-  invitationStatus: "invited" | "not_invited";
+  invitationStatus: InvitationStatus;
   rsvpStatus: RsvpStatus;
   attended: boolean;
   checkedInAt: string | null;
   notes: string | null;
+}
+
+export interface EventAuditEntry {
+  id: string;
+  action: string;
+  details: Record<string, unknown>;
+  organizerName: string;
+  createdAt: string;
 }
 
 export interface DashboardData {
