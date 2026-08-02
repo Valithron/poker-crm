@@ -8,6 +8,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { api, ApiError } from "./api";
+import { BrandMark } from "./BrandMark";
 import type {
   DashboardData,
   EventAuditEntry,
@@ -1203,7 +1204,7 @@ export function App() {
     return (
       <main className="auth-state">
         <div className="brand-lockup">
-          <span aria-hidden="true">♠</span>
+          <BrandMark />
           <strong>BroTM Poker</strong>
         </div>
         <h1>Organizer access required</h1>
@@ -1221,7 +1222,7 @@ export function App() {
       </a>
       <header className="topbar">
         <Link className="brand-lockup" to="/">
-          <span aria-hidden="true">♠</span>
+          <BrandMark />
           <strong>BroTM Poker</strong>
         </Link>
         <div className="organizer-chip">
