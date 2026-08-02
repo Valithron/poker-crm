@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import type { LedgerEntryType } from "../shared/money";
 import { api } from "./api";
+import { BrandMark } from "./BrandMark";
 
 interface MoneyEvent {
   id: string;
@@ -117,7 +118,7 @@ function MoneyShell({ children }: { children: ReactNode }) {
     <div className="money-shell">
       <header className="money-topbar">
         <Link className="brand-lockup" to="/">
-          <span aria-hidden="true">♠</span>
+          <BrandMark />
           <strong>BroTM Poker</strong>
         </Link>
         <span>Cash ledger</span>
