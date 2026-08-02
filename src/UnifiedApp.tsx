@@ -8,6 +8,7 @@ import {
 } from "../shared/app-shell";
 import { App } from "./App";
 import { api, ApiError } from "./api";
+import { BrandMark } from "./BrandMark";
 import { MoneyEventPage, PlayerMoneyPage } from "./Money";
 import { OperationsApp } from "./Operations";
 import { RsvpAdminPage } from "./Rsvp";
@@ -84,7 +85,7 @@ export function UnifiedApp() {
         : errorMessage(sessionError);
     return (
       <main className="auth-state">
-        <div className="brand-lockup"><span aria-hidden="true">♠</span><strong>BroTM Poker</strong></div>
+        <div className="brand-lockup"><BrandMark /><strong>BroTM Poker</strong></div>
         <h1>Organizer access required</h1>
         <p>{accessMessage}</p>
       </main>
@@ -101,7 +102,7 @@ export function UnifiedApp() {
       <a className="skip-link" href="#unified-main">Skip to content</a>
       <header className="unified-topbar">
         <Link className="brand-lockup" to="/">
-          <span aria-hidden="true">♠</span>
+          <BrandMark />
           <strong>BroTM Poker</strong>
         </Link>
         <div className="unified-topbar-actions">
