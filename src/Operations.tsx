@@ -9,6 +9,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { api } from "./api";
+import { BrandMark } from "./BrandMark";
 import type { Organizer } from "./types";
 
 type EventStatus = "draft" | "open" | "active" | "completed" | "cancelled" | "archived";
@@ -192,7 +193,7 @@ function OperationsShell({ children }: { children: ReactNode }) {
     <div className="app-shell operations-shell">
       <header className="topbar">
         <Link className="brand-lockup" to="/ops">
-          <span aria-hidden="true">♠</span>
+          <BrandMark />
           <strong>BroTM Operations</strong>
         </Link>
         <div className="organizer-chip">

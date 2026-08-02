@@ -253,3 +253,9 @@
     grid-column: auto;
   }
 }
+
+
+.public-rsvp-brand .brand-mark {
+  width: 42px;
+  height: 42px;
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { PublicRsvpStatus, RsvpLocationVisibility } from "../shared/rsvp";
 import { api } from "./api";
+import { BrandMark } from "./BrandMark";
 
 interface PublicRsvpDetail {
   player: { id: string; displayName: string };
@@ -161,7 +162,7 @@ export function PublicRsvpPage() {
     return (
       <main className="public-rsvp-shell">
         <section className="public-rsvp-card public-rsvp-error" role="alert">
-          <div className="public-rsvp-brand"><span aria-hidden="true">♠</span><strong>BroTM Poker</strong></div>
+          <div className="public-rsvp-brand"><BrandMark /><strong>BroTM Poker</strong></div>
           <h1>Invitation unavailable</h1>
           <p>{errorMessage(error)}</p>
         </section>
@@ -176,7 +177,7 @@ export function PublicRsvpPage() {
   return (
     <main className="public-rsvp-shell">
       <section className="public-rsvp-card">
-        <div className="public-rsvp-brand"><span aria-hidden="true">♠</span><strong>BroTM Poker</strong></div>
+        <div className="public-rsvp-brand"><BrandMark /><strong>BroTM Poker</strong></div>
         <p className="eyebrow">Private invitation for {detail.player.displayName}</p>
         <h1>{detail.event.title}</h1>
         <div className="public-rsvp-details">

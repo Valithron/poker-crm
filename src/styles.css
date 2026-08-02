@@ -672,3 +672,12 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+.brand-mark {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  object-fit: cover;
+}
