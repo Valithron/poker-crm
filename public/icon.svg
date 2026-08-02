@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="72" fill="#075b3b"/>
+  <path fill="#fff" d="M256 48c-22 48-69 80-128 99l-42 14 47 43 55-11-17 64-72 125 98-57 59 113 59-113 98 57-72-125-17-64 55 11 47-43-42-14c-59-19-106-51-128-99z"/>
+  <path fill="#d7b267" d="M126 363h104l-18 8h-86zm156 0h104l-18 8h-86zM248 354h16v16h-16z"/>
+  <text x="256" y="445" fill="#fff" text-anchor="middle" font-family="Georgia,serif" font-size="76" font-weight="700" letter-spacing="-4">Bro</text>
+</svg>
