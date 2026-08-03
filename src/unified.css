@@ -12,7 +12,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem max(1rem, calc((100vw - 1180px) / 2));
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(215, 178, 103, 0.28);
   background: rgba(9, 11, 8, 0.96);
 }
 
@@ -93,10 +93,20 @@
   text-decoration: none;
 }
 
+.event-workspace-nav a span {
+  margin-right: 0.35rem;
+  color: var(--green);
+  font-size: 0.95rem;
+}
+
 .event-workspace-nav a:hover,
 .event-workspace-nav a.active {
   background: var(--surface-strong, #1b2119);
   color: var(--text);
+}
+
+.event-workspace-nav a.active {
+  box-shadow: inset 0 -2px 0 var(--gold);
 }
 
 .deployment-warning {
@@ -170,6 +180,10 @@
     border-bottom: 0;
   }
 
+  .unified-shell.is-event-workspace .unified-nav {
+    display: none;
+  }
+
   .unified-nav a {
     min-width: 0;
     min-height: 50px;
@@ -188,6 +202,34 @@
   .deployment-warning,
   .unified-footer {
     width: min(100% - 1rem, 1180px);
+  }
+
+  .unified-shell.is-event-workspace .event-workspace-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 80;
+    width: 100%;
+    margin: 0;
+    padding: 0.35rem max(0.35rem, env(safe-area-inset-left)) calc(0.35rem + env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-right));
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: rgba(9, 11, 8, 0.97);
+    backdrop-filter: blur(16px);
+  }
+
+  .event-workspace-nav a {
+    min-height: 54px;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.68rem;
+  }
+
+  .event-workspace-nav a span {
+    margin: 0;
+    font-size: 1rem;
   }
 
   .deployment-warning {
@@ -216,6 +258,10 @@
   }
 
   .unified-footer {
+    padding-bottom: 6.5rem;
+  }
+
+  .unified-shell.is-event-workspace .unified-footer {
     padding-bottom: 6.5rem;
   }
 }

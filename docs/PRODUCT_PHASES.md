@@ -19,15 +19,25 @@
 - event balance validation
 - player net results
 
-## Phase 3: Invitation improvements
+## Phase 3: Invitation delivery
 
-- reusable invite templates
-- secure RSVP links
-- player response flow without full accounts
-- optional delivery integrations
+- player-specific RSVP links
+- manual email delivery through Resend
+- delivery history and failure reporting
+- development delivery sink for local and preview testing
+- email-first roster invite action with confirmation
+- delivery batches, idempotency, and failed-send retry
+- private RSVP token rotation and response tracking
+
+SMS delivery, preferred-channel fallback, and scheduled reminders remain the next delivery extensions using the same batch and token contracts.
+
+Recurring campaigns and general-purpose bulk messaging remain later features. Automated invitation delivery is now part of the active product roadmap rather than a deferred non-goal.
 
 ## Phase 4: Useful analytics
 
+- phone-first Live Night workspace and resilient installable shell
+- roster search, attendance filters, and live refresh state
+- local planning drafts and duplicate-night setup
 - attendance trends
 - hosting frequency
 - RSVP conversion

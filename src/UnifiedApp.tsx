@@ -14,6 +14,11 @@ import { OperationsApp } from "./Operations";
 import { RsvpAdminPage } from "./Rsvp";
 import type { Organizer } from "./types";
 
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
@@ -52,6 +57,8 @@ export function UnifiedApp() {
   const [organizer, setOrganizer] = useState<Organizer>();
   const [sessionError, setSessionError] = useState<unknown>();
   const [health, setHealth] = useState<HealthReport>();
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent>();
   const eventId = eventIdFromPath(location.pathname);
 
   useEffect(() => {
@@ -78,6 +85,28 @@ export function UnifiedApp() {
       });
   }, []);
 
+  useEffect(() => {
+    const updateOnline = () => setOnline(navigator.onLine);
+    const captureInstall = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    };
+    window.addEventListener("online", updateOnline);
+    window.addEventListener("offline", updateOnline);
+    window.addEventListener("beforeinstallprompt", captureInstall);
+    return () => {
+      window.removeEventListener("online", updateOnline);
+      window.removeEventListener("offline", updateOnline);
+      window.removeEventListener("beforeinstallprompt", captureInstall);
+    };
+  }, []);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    setInstallPrompt(undefined);
+  }
+
   if (sessionError) {
     const accessMessage =
       sessionError instanceof ApiError && sessionError.status === 403
@@ -98,7 +127,7 @@ export function UnifiedApp() {
   const searchActive = location.pathname.startsWith("/ops/search");
 
   return (
-    <div className="unified-shell">
+    <div className={`unified-shell ${eventId ? "is-event-workspace" : ""}`}>
       <a className="skip-link" href="#unified-main">Skip to content</a>
       <header className="unified-topbar">
         <Link className="brand-lockup" to="/">
@@ -106,6 +135,8 @@ export function UnifiedApp() {
           <strong>BroTM Poker</strong>
         </Link>
         <div className="unified-topbar-actions">
+          {!online ? <span className="connection-badge is-offline">Offline shell</span> : null}
+          {installPrompt ? <ButtonLike onClick={() => void installApp()}>Install app</ButtonLike> : null}
           <Link className="button button-primary unified-plan-button" to="/ops/events/new">Plan night</Link>
           <div className="organizer-chip"><span>{organizer.displayName}</span><small>{organizer.role}</small></div>
         </div>
@@ -130,10 +161,10 @@ export function UnifiedApp() {
 
       {eventId ? (
         <nav className="event-workspace-nav" aria-label="Poker night sections">
-          <Link className={location.pathname === `/events/${eventId}` ? "active" : ""} to={`/events/${eventId}`}>Details & live</Link>
-          <Link className={location.pathname === `/ops/events/${eventId}` ? "active" : ""} to={`/ops/events/${eventId}`}>Invites & RSVP</Link>
-          <Link className={location.pathname === `/events/${eventId}/rsvp-links` ? "active" : ""} to={`/events/${eventId}/rsvp-links`}>RSVP links</Link>
-          <Link className={location.pathname === `/money/events/${eventId}` ? "active" : ""} to={`/money/events/${eventId}`}>Money</Link>
+          <Link className={location.pathname === `/events/${eventId}` ? "active" : ""} to={`/events/${eventId}`}><span aria-hidden="true">◉</span> Live</Link>
+          <Link className={location.pathname === `/events/${eventId}/rsvp-links` ? "active" : ""} to={`/events/${eventId}/rsvp-links`}><span aria-hidden="true">✉</span> RSVP</Link>
+          <Link className={location.pathname === `/money/events/${eventId}` ? "active" : ""} to={`/money/events/${eventId}`}><span aria-hidden="true">$</span> Money</Link>
+          <Link className={location.pathname === `/ops/events/${eventId}` ? "active" : ""} to={`/ops/events/${eventId}`}><span aria-hidden="true">⋯</span> More</Link>
         </nav>
       ) : null}
 
@@ -148,4 +179,8 @@ export function UnifiedApp() {
       </footer>
     </div>
   );
+}
+
+function ButtonLike({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return <button className="button button-secondary install-button" type="button" onClick={onClick}>{children}</button>;
 }

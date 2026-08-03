@@ -1,5 +1,5 @@
-export const APP_VERSION = "2.3.0";
-export const REQUIRED_SCHEMA_VERSION = 4;
+export const APP_VERSION = "2.4.0";
+export const REQUIRED_SCHEMA_VERSION = 6;
 
 export interface HealthReport {
   ok: boolean;

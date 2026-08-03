@@ -6,7 +6,7 @@ Approve or revise these decisions before implementation begins.
 - [ ] The core workflow is plan, invite, run, close, and review.
 - [ ] The MVP supports trusted organizers only.
 - [ ] Players do not need accounts in the MVP.
-- [ ] The app prepares invitation information but does not send email or SMS initially.
+- [x] The app manually sends invitation email and records delivery results.
 - [ ] Attendance tracking is required.
 - [ ] Money tracking is optional by event.
 - [ ] The first vertical slice excludes money tracking.

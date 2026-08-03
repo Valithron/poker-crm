@@ -75,6 +75,12 @@ Use an incognito window that is not logged into Cloudflare Access.
 6. Revoke the link and confirm it no longer loads.
 7. For address privacy, verify the location appears only after a Yes response.
 
+## 5. Configure manual delivery
+
+For local and preview testing, set `DELIVERY_MODE=log` and `AUTH_MODE=public`. The organizer identity is resolved from `DEV_ORGANIZER_EMAIL`, so no Access login is required.
+
+For the email-first release, set `DELIVERY_MODE=live`, configure `RESEND_API_KEY` and `EMAIL_FROM` as Pages secrets, open an event, choose **Invite roster by email**, review the recipient summary, and confirm the send. SMS and scheduled reminders remain follow-on work; their shared provider and batch contracts are retained for the next delivery milestone.
+
 ## Security properties
 
 - Tokens contain 256 bits of randomness.

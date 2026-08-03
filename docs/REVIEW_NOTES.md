@@ -5,7 +5,7 @@ The proposed v2 direction deliberately favors an organizer-first operating tool 
 The most consequential choices for Sterling to review are:
 
 1. Organizer-only MVP versus player accounts immediately.
-2. Invitation preparation versus automated delivery immediately.
+2. Email-first manual invitation delivery; scheduled reminders remain a later automation phase.
 3. Attendance as the first operational record.
 4. Money tracking as the second product phase rather than the first vertical slice.
 5. Cloudflare Access plus D1 versus custom authentication.

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import type { DeliveryChannel, DeliveryStatus } from "../shared/delivery";
 import type { PublicRsvpStatus, RsvpLocationVisibility } from "../shared/rsvp";
 import { api } from "./api";
 import { BrandMark } from "./BrandMark";
@@ -42,7 +43,16 @@ interface AdminRsvpPlayer {
   displayName: string;
   invitationStatus: "invited" | "not_invited";
   rsvpStatus: "pending" | PublicRsvpStatus;
+  contact: { email: string | null; phone: string | null };
   invite: AdminInviteState;
+  latestDelivery: Record<DeliveryChannel, LatestDelivery | null>;
+}
+
+interface LatestDelivery {
+  status: DeliveryStatus;
+  provider: string | null;
+  at: string | null;
+  errorMessage: string | null;
 }
 
 interface AdminRsvpDetail {
@@ -66,6 +76,54 @@ interface GeneratedInvite {
   url: string;
   inviteText: string;
   expiresAt: string;
+}
+
+interface AdminDelivery {
+  id: string;
+  playerId: string;
+  playerName: string;
+  channel: DeliveryChannel;
+  destination: string;
+  provider: string;
+  status: DeliveryStatus;
+  providerMessageId: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  batchId: string | null;
+  attempt: number;
+  providerStatus: string | null;
+  providerStatusAt: string | null;
+}
+
+interface AdminDeliveryBatch {
+  id: string;
+  policy: "requested_channels" | "preferred_with_fallback";
+  source: "manual" | "scheduled";
+  status: "sending" | "completed" | "partial" | "failed";
+  summary: { requested: number; sent: number; failed: number; skipped: number };
+  createdAt: string;
+  completedAt: string | null;
+}
+
+interface SendInvitesResponse {
+  batchId: string;
+  summary: { requested: number; sent: number; failed: number; skipped: number };
+  results: Array<{
+    deliveryId: string | null;
+    playerId: string;
+    playerName: string;
+    channel: DeliveryChannel;
+    destination: string | null;
+    provider: string | null;
+    status: "sent" | "failed" | "skipped";
+    errorMessage: string | null;
+  }>;
+}
+
+interface PendingSend {
+  playerIds?: string[];
+  targetLabel: string;
 }
 
 function formatDate(value: string): string {
@@ -232,15 +290,27 @@ function inviteStatus(player: AdminRsvpPlayer): string {
 
 export function RsvpAdminPage() {
   const { id = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const [detail, setDetail] = useState<AdminRsvpDetail>();
+  const [deliveries, setDeliveries] = useState<AdminDelivery[]>([]);
+  const [batches, setBatches] = useState<AdminDeliveryBatch[]>([]);
   const [generated, setGenerated] = useState<Record<string, GeneratedInvite>>({});
   const [error, setError] = useState<unknown>();
   const [message, setMessage] = useState<string>();
   const [saving, setSaving] = useState(false);
+  const [pendingSend, setPendingSend] = useState<PendingSend>();
+  const confirmSendButton = useRef<HTMLButtonElement>(null);
+  const didAutoOpenInvite = useRef(false);
 
   const load = async () => {
     try {
-      setDetail(await api<AdminRsvpDetail>(`/rsvp-admin-api/events/${id}`));
+      const [nextDetail, deliveryResponse] = await Promise.all([
+        api<AdminRsvpDetail>(`/rsvp-admin-api/events/${id}`),
+        api<{ deliveries: AdminDelivery[]; batches: AdminDeliveryBatch[] }>(`/rsvp-admin-api/events/${id}/deliveries`),
+      ]);
+      setDetail(nextDetail);
+      setDeliveries(deliveryResponse.deliveries);
+      setBatches(deliveryResponse.batches);
       setError(undefined);
     } catch (caught) {
       setError(caught);
@@ -250,6 +320,15 @@ export function RsvpAdminPage() {
   useEffect(() => {
     void load();
   }, [id]);
+
+  useEffect(() => {
+    if (!detail || didAutoOpenInvite.current || searchParams.get("invite") !== "1") return;
+    didAutoOpenInvite.current = true;
+    if (detail.event.status === "open" || detail.event.status === "active") {
+      const invited = detail.players.filter((player) => player.invitationStatus === "invited");
+      if (invited.length) setPendingSend({ targetLabel: `${invited.length} rostered players` });
+    }
+  }, [detail, searchParams]);
 
   const invitedPlayers = useMemo(
     () => detail?.players.filter((player) => player.invitationStatus === "invited") ?? [],
@@ -289,6 +368,39 @@ export function RsvpAdminPage() {
       setGenerated(next);
       await copyText(response.generated.map((invite) => invite.inviteText).join("\n\n---\n\n"));
       setMessage(`${response.generated.length} personalized invitations were generated and copied.`);
+      await load();
+    } catch (caught) {
+      setError(caught);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function requestSendInvites(playerIds?: string[]) {
+    const target = playerIds?.length === 1
+      ? "this player"
+      : `${playerIds?.length ?? invitedPlayers.length} rostered players`;
+    setPendingSend({ playerIds, targetLabel: target });
+  }
+
+  async function sendInvites(playerIds?: string[]) {
+    setPendingSend(undefined);
+    setSaving(true);
+    setError(undefined);
+    setMessage(undefined);
+    try {
+      const response = await api<SendInvitesResponse>(`/rsvp-admin-api/events/${id}/send-invites`, {
+        method: "POST",
+        body: JSON.stringify({
+          channels: ["email"],
+          requestId: crypto.randomUUID(),
+          ...(playerIds ? { playerIds } : {}),
+        }),
+      });
+      const { summary } = response;
+      setMessage(
+        `Batch ${response.batchId.slice(0, 8)} processed: ${summary.sent} sent, ${summary.failed} failed, ${summary.skipped} skipped.`,
+      );
       await load();
     } catch (caught) {
       setError(caught);
@@ -351,13 +463,87 @@ export function RsvpAdminPage() {
     }
   }
 
+  async function retryDelivery(delivery: AdminDelivery) {
+    if (delivery.status !== "failed") return;
+    setSaving(true);
+    setError(undefined);
+    setMessage(undefined);
+    try {
+      const response = await api<SendInvitesResponse>(`/rsvp-admin-api/deliveries/${delivery.id}/retry`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setMessage(`Retry processed: ${response.summary.sent} sent, ${response.summary.failed} failed, ${response.summary.skipped} skipped.`);
+      await load();
+    } catch (caught) {
+      setError(caught);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  useEffect(() => {
+    if (pendingSend) confirmSendButton.current?.focus();
+  }, [pendingSend]);
+
   if (error && !detail) return <div className="state-card state-error">{errorMessage(error)}</div>;
   if (!detail) return <div className="state-card">Loading RSVP links…</div>;
 
   const locked = ["completed", "cancelled", "archived"].includes(detail.event.status);
+  const sendable = detail.event.status === "open" || detail.event.status === "active";
+  const contactSummary = {
+    email: invitedPlayers.filter((player) => Boolean(player.contact.email)).length,
+    missing: invitedPlayers.filter((player) => !player.contact.email).length,
+    excluded: (detail?.players.length ?? 0) - invitedPlayers.length,
+  };
 
   return (
     <div className="rsvp-admin-page">
+      {pendingSend ? (
+        <div
+          className="invite-dialog-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPendingSend(undefined);
+          }}
+        >
+          <section
+            className="invite-dialog panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invite-dialog-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setPendingSend(undefined);
+            }}
+          >
+            <div>
+              <p className="eyebrow">Review invitation</p>
+              <h2 id="invite-dialog-title">Send email invitations?</h2>
+              <p>
+                This will send email to {pendingSend.targetLabel}. Each recipient gets a fresh RSVP link; any previous link for that player will stop working.
+              </p>
+            </div>
+            <div className="invite-dialog-summary">
+              <span><strong>{pendingSend.playerIds?.length ?? invitedPlayers.length}</strong> selected</span>
+              <span><strong>{pendingSend.playerIds ? pendingSend.playerIds.filter((playerId) => invitedPlayers.some((player) => player.playerId === playerId && player.contact.email)).length : contactSummary.email}</strong> email-ready</span>
+              <span className={contactSummary.missing ? "is-warning" : ""}><strong>{pendingSend.playerIds ? pendingSend.playerIds.filter((playerId) => invitedPlayers.some((player) => player.playerId === playerId && !player.contact.email)).length : contactSummary.missing}</strong> skipped without email</span>
+            </div>
+            <div className="invite-dialog-actions">
+              <button className="button button-secondary" type="button" onClick={() => setPendingSend(undefined)}>
+                Cancel
+              </button>
+              <button
+                ref={confirmSendButton}
+                className="button button-primary"
+                type="button"
+                onClick={() => void sendInvites(pendingSend.playerIds)}
+              >
+                Send invitations
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
       <div className="page-header">
         <div>
           <p className="eyebrow">Private self-service RSVP</p>
@@ -365,9 +551,12 @@ export function RsvpAdminPage() {
           <p className="rsvp-admin-subtitle">Generate personalized links without giving players organizer access.</p>
         </div>
         <div className="page-actions">
-          <Link className="button button-secondary" to={`/ops/events/${id}`}>Invite summary</Link>
+          <Link className="button button-secondary" to={`/events/${id}`}>Event setup</Link>
           <button className="button button-primary" type="button" disabled={saving || locked || !invitedPlayers.length} onClick={() => void generateAll()}>
             Generate all and copy
+          </button>
+          <button className="button button-primary" type="button" disabled={saving || !sendable || !invitedPlayers.length} onClick={() => requestSendInvites()}>
+            Invite roster by email
           </button>
         </div>
       </div>
@@ -394,6 +583,23 @@ export function RsvpAdminPage() {
       {locked ? (
         <div className="state-card">This event is locked. Recorded responses remain visible, but links cannot be generated, regenerated, or revoked.</div>
       ) : null}
+      {!locked && !sendable ? (
+        <div className="state-card">Open the event before sending invitations. Draft events can still have links generated for testing.</div>
+      ) : null}
+
+      <section className="panel rsvp-preflight-panel">
+        <div>
+          <p className="eyebrow">Send preflight</p>
+          <h2>Ready to invite</h2>
+          <p>Sending rotates each invited player’s RSVP link. Missing contacts are skipped without stopping the batch.</p>
+        </div>
+        <div className="rsvp-preflight-stats">
+          <span><strong>{invitedPlayers.length}</strong> eligible</span>
+          <span><strong>{contactSummary.email}</strong> with email</span>
+          <span className={contactSummary.missing ? "is-warning" : ""}><strong>{contactSummary.missing}</strong> missing email</span>
+          <span><strong>{contactSummary.excluded}</strong> excluded</span>
+        </div>
+      </section>
 
       <section className="panel">
         <div className="section-heading-row">
@@ -411,13 +617,21 @@ export function RsvpAdminPage() {
                 <div className="rsvp-admin-player">
                   <strong>{player.displayName}</strong>
                   <span>RSVP: {player.rsvpStatus}</span>
+                  <small>Email: {player.contact.email || "not saved"}</small>
+                  <small>Phone: {player.contact.phone || "not saved"}</small>
+                  <small>Email is the active invitation method in this release.</small>
                 </div>
                 <div className="rsvp-admin-metadata">
                   <span className={`rsvp-link-status ${player.invite.active ? "is-active" : ""}`}>{inviteStatus(player)}</span>
                   <small>Last response: {formatShortDate(player.invite.lastResponseAt)}</small>
                   {player.invite.expiresAt ? <small>Expires: {formatShortDate(player.invite.expiresAt)}</small> : null}
+                  <small>Email: {deliverySummary(player.latestDelivery.email)}</small>
+                  <small>Text: {deliverySummary(player.latestDelivery.sms)}</small>
                 </div>
                 <div className="rsvp-admin-actions">
+                  <button className="button button-primary" type="button" disabled={saving || !sendable || !player.contact.email} onClick={() => requestSendInvites([player.playerId])}>
+                    Send email
+                  </button>
                   <button className="button button-primary" type="button" disabled={saving || locked} onClick={() => void generateOne(player)}>
                     {player.invite.exists ? "Regenerate and copy" : "Generate and copy"}
                   </button>
@@ -440,6 +654,67 @@ export function RsvpAdminPage() {
           {!invitedPlayers.length ? <div className="state-card">Mark players as invited on the event roster first.</div> : null}
         </div>
       </section>
+
+      <section className="panel">
+        <div className="section-heading-row">
+          <div><p className="eyebrow">Batch history</p><h2>Send summaries</h2></div>
+          <span>{batches.length}</span>
+        </div>
+        {batches.length ? (
+          <div className="rsvp-delivery-history">
+            {batches.map((batch) => (
+              <article className="rsvp-delivery-row" key={batch.id}>
+                <div>
+                  <strong>{batch.source === "scheduled" ? "Scheduled reminder" : "Organizer send"}</strong>
+                  <span>{batch.policy === "preferred_with_fallback" ? "Preferred channel with fallback" : "Requested channels"}</span>
+                </div>
+                <div>
+                  <span className={`rsvp-delivery-status is-${batch.status}`}>{batch.status}</span>
+                  <small>{batch.summary.sent} sent · {batch.summary.failed} failed · {batch.summary.skipped} skipped</small>
+                  <small>{formatShortDate(batch.completedAt || batch.createdAt)}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="state-card">No send batches yet.</div>
+        )}
+      </section>
+
+      <section className="panel">
+        <div className="section-heading-row">
+          <div><p className="eyebrow">Delivery history</p><h2>Recent invitation attempts</h2></div>
+          <span>{deliveries.length}</span>
+        </div>
+        {deliveries.length ? (
+          <div className="rsvp-delivery-history">
+            {deliveries.map((delivery) => (
+              <article className="rsvp-delivery-row" key={delivery.id}>
+                <div>
+                  <strong>{delivery.playerName}</strong>
+                  <span>{delivery.channel === "email" ? "Email" : "Text"} · {delivery.destination}</span>
+                </div>
+                <div>
+                  <span className={`rsvp-delivery-status is-${delivery.status}`}>{delivery.status}</span>
+                  <small>{delivery.provider} · {formatShortDate(delivery.completedAt || delivery.createdAt)}</small>
+                  {delivery.errorMessage ? <small className="state-error-text">{delivery.errorMessage}</small> : null}
+                  <small>Attempt {delivery.attempt}</small>
+                  {delivery.providerStatus ? <small>Provider: {delivery.providerStatus}</small> : null}
+                  {delivery.status === "failed" ? <button className="button button-secondary" type="button" disabled={saving || !sendable} onClick={() => void retryDelivery(delivery)}>Retry</button> : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="state-card">No delivery attempts yet.</div>
+        )}
+      </section>
     </div>
   );
+}
+
+function deliverySummary(delivery: LatestDelivery | null): string {
+  if (!delivery) return "not sent";
+  if (delivery.status === "sent") return `${delivery.provider ?? "provider"} · ${formatShortDate(delivery.at)}`;
+  return `${delivery.status}${delivery.errorMessage ? ` · ${delivery.errorMessage}` : ""}`;
 }

@@ -49,6 +49,44 @@ export function buildPersonalizedInviteText(input: PersonalizedInviteInput, loca
   return lines.join("\n");
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formattedInviteTime(startsAt: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "full",
+    timeStyle: "short",
+  }).format(new Date(startsAt));
+}
+
+export function buildPersonalizedInviteEmail(
+  input: PersonalizedInviteInput,
+  locale = "en-US",
+): { subject: string; text: string; html: string } {
+  const text = buildPersonalizedInviteText(input, locale);
+  const lines = text.split("\n");
+  const escapedLines = lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
+  const subject = `BroTM Poker: ${input.title} — RSVP`;
+  const html = `${escapedLines}<p><a href="${escapeHtml(input.rsvpUrl)}">RSVP yes, maybe, or no</a></p>`;
+  return { subject, text, html };
+}
+
+export function buildPersonalizedInviteSms(input: PersonalizedInviteInput, locale = "en-US"): string {
+  const lines = [`BroTM Poker: ${input.title}`, formattedInviteTime(input.startsAt, locale)];
+  if (input.hostName) lines.push(`Host: ${input.hostName}`);
+  if (input.locationVisibility === "always" && input.location) lines.push(`Location: ${input.location}`);
+  if (input.locationVisibility === "after_yes") lines.push("Address appears after a Yes RSVP.");
+  lines.push(`RSVP: ${input.rsvpUrl}`);
+  const message = lines.join(" | ");
+  return message.length <= 480 ? message : `${message.slice(0, 477)}...`;
+}
+
 export function createRsvpToken(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);

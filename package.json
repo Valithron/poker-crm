@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Private organizer application for BroTM Poker nights.",
   "scripts": {
-    "dev": "wrangler pages dev dist --d1=DB --compatibility-date=2026-07-21",
+    "dev": "wrangler pages dev dist --d1=DB=local-brotm-poker --compatibility-date=2026-07-21 --binding AUTH_MODE=public --binding DEV_ORGANIZER_EMAIL=dev@example.com --binding DELIVERY_MODE=log --binding PUBLIC_APP_ORIGIN=http://localhost:8788 --show-interactive-dev-session false",
+    "dev:worker": "wrangler dev worker.ts --config wrangler.worker.jsonc",
     "dev:web": "vite",
     "build": "vite build",
     "format:check": "node scripts/format-check.mjs",
@@ -14,7 +15,8 @@
     "test": "vitest run",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "db:migrate:local": "wrangler d1 migrations apply brotm-poker --local --config wrangler.local.jsonc",
-    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker --remote --config wrangler.local.jsonc"
+    "db:migrate:remote": "wrangler d1 migrations apply brotm-poker --remote --config wrangler.local.jsonc",
+    "deploy:worker": "wrangler deploy --config wrangler.worker.jsonc"
   },
   "dependencies": {
     "react": "^19.2.0",
