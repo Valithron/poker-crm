@@ -269,10 +269,19 @@ async function processRow(db: D1Database, env: Env, row: NotificationRow, origin
     rsvpUrl,
     calendarUrl: calendarUrl(origin, token),
     directionsUrl: row.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}` : null,
+    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon.png?v=2`,
   };
   const email = isReminder ? buildPersonalizedReminderEmail(input) : buildPersonalizedUpdateEmail(input, fields);
   const provider = providerName("email", env);
-  const message = { channel: "email" as const, destination: destination.destination, subject: email.subject, text: email.text, html: email.html, idempotencyKey: `${batchId}:${deliveryId}` };
+  const message = {
+    channel: "email" as const,
+    destination: destination.destination,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+    headers: email.headers,
+    idempotencyKey: `${batchId}:${deliveryId}`,
+  };
 
   await db.batch([
     db.prepare(

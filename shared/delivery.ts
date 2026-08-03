@@ -59,6 +59,7 @@ export interface DeliveryMessage {
   subject?: string;
   text: string;
   html?: string;
+  headers?: Record<string, string>;
   idempotencyKey: string;
 }
 

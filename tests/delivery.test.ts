@@ -17,6 +17,7 @@ const invite = {
   gameNotes: "Dealer's choice",
   stakesNotes: "$10 buy-in",
   rsvpUrl: "https://poker.skpfam.com/rsvp/example-token",
+  brandAssetUrl: "https://poker.skpfam.com/apple-touch-icon.png?v=2",
 };
 
 describe("invite delivery contracts", () => {
@@ -56,6 +57,11 @@ describe("invite delivery contracts", () => {
     expect(message.subject).toContain("Friday Poker Night");
     expect(message.text).toContain(invite.rsvpUrl);
     expect(message.html).toContain(`href="${invite.rsvpUrl}"`);
+    expect(message.html).toContain("max-width:600px");
+    expect(message.html).toContain("role=\"presentation\"");
+    expect(message.html).toContain("apple-touch-icon");
+    expect(message.html).toContain("BroTime Poker Night");
+    expect(message.html).toContain("You’re receiving this because you were invited");
   });
 
   it("includes calendar and directions links when supplied", () => {
@@ -77,6 +83,19 @@ describe("invite delivery contracts", () => {
     expect(message.html).toContain("A &lt;Player&gt;");
     expect(message.html).toContain("Friday &amp; Saturday");
     expect(message.html).not.toContain("A <Player>");
+  });
+
+  it("supports future unsubscribe links and one-click headers", () => {
+    const message = buildPersonalizedInviteEmail({
+      ...invite,
+      unsubscribeUrl: "https://poker.skpfam.com/unsubscribe/example",
+    });
+    expect(message.html).toContain("Unsubscribe from BroTime Poker emails");
+    expect(message.text).toContain("Unsubscribe: https://poker.skpfam.com/unsubscribe/example");
+    expect(message.headers).toEqual({
+      "List-Unsubscribe": "<https://poker.skpfam.com/unsubscribe/example>",
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
   });
 
   it("keeps SMS concise while preserving the RSVP link", () => {
