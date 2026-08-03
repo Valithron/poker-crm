@@ -1,5 +1,7 @@
-const CACHE = "brotm-shell-v1";
-const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/icon-1024.png", "/apple-touch-icon.png"];
+// Change the cache name whenever the HTML shell or its icon assets change.
+// This prevents an installed shortcut from keeping an old bundle reference.
+const CACHE = "brotm-shell-v3";
+const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon.svg", "/apple-touch-icon-v3.png"];
 const API_PREFIXES = ["/api/", "/rsvp-api/", "/rsvp-admin-api/", "/ops-api/", "/money-api/"];
 
 self.addEventListener("install", (event) => {
