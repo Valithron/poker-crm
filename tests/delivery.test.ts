@@ -58,6 +58,16 @@ describe("invite delivery contracts", () => {
     expect(message.html).toContain(`href="${invite.rsvpUrl}"`);
   });
 
+  it("includes calendar and directions links when supplied", () => {
+    const message = buildPersonalizedInviteEmail({
+      ...invite,
+      calendarUrl: "https://poker.skpfam.com/rsvp-api/example-token/calendar.ics",
+      directionsUrl: "https://www.google.com/maps/search/?api=1&query=123%20Main%20Street",
+    });
+    expect(message.text).toContain("calendar.ics");
+    expect(message.html).toContain("Get directions");
+  });
+
   it("escapes player and event content in the HTML email", () => {
     const message = buildPersonalizedInviteEmail({
       ...invite,

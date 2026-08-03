@@ -19,6 +19,8 @@ const requiredTables = [
   "invite_deliveries",
   "delivery_batches",
   "invite_delivery_results",
+  "delivery_schedules",
+  "event_update_notifications",
   "d1_migrations",
 ];
 
@@ -50,6 +52,7 @@ export const onRequestGet: AppPagesFunction = async (context) => {
       eventColumns.has("capacity") ? "" : "events.capacity",
       eventColumns.has("rsvp_location_visibility") ? "" : "events.rsvp_location_visibility",
       playersColumns.has("preferred_channel") ? "" : "players.preferred_channel",
+      eventColumns.has("invite_automation_enabled") ? "" : "events.invite_automation_enabled",
     ].filter(Boolean);
 
     const migrationRow = tables.has("d1_migrations")

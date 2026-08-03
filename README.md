@@ -28,9 +28,9 @@ npm run dev
 
 Create `.dev.vars` and seed a local organizer before starting the application. See [`docs/CLOUDFLARE_V2_SETUP.md`](docs/CLOUDFLARE_V2_SETUP.md).
 
-Local and preview construction use `AUTH_MODE=public` and `DELIVERY_MODE=log`, so organizer login and provider credentials do not block testing. The current delivery milestone sends manual email invitations through Resend; scheduled reminders and SMS remain follow-on work using the same delivery records and token behavior.
+Local and preview construction use `AUTH_MODE=public` and `DELIVERY_MODE=log`, so organizer login and provider credentials do not block testing. The application supports manual email invitations through Resend plus an opt-in 24-hour reminder and event-update worker. SMS remains a follow-on channel using the same delivery records and token behavior.
 
-The reminder worker is retained as follow-on work and is not required for the email-first release. If you are specifically developing that extension, run it locally with:
+The reminder/update worker is optional for the Pages application and runs separately. To develop it locally, run:
 
 ```bash
 npm run dev:worker

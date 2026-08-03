@@ -29,7 +29,7 @@
 - delivery batches, idempotency, and failed-send retry
 - private RSVP token rotation and response tracking
 
-SMS delivery, preferred-channel fallback, and scheduled reminders remain the next delivery extensions using the same batch and token contracts.
+SMS delivery remains the next delivery extension using the same batch and token contracts. The current phase also includes invitee calendar/directions actions, opt-in 24-hour email reminders, and automatic event-detail update emails.
 
 Recurring campaigns and general-purpose bulk messaging remain later features. Automated invitation delivery is now part of the active product roadmap rather than a deferred non-goal.
 

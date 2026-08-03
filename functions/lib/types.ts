@@ -16,6 +16,7 @@ export interface Env {
   PUBLIC_APP_ORIGIN?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
+  RSVP_TOKEN_ENCRYPTION_KEY?: string;
   TWILIO_ACCOUNT_SID?: string;
   TWILIO_AUTH_TOKEN?: string;
   TWILIO_FROM_NUMBER?: string;

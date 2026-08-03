@@ -16,6 +16,8 @@ import {
 } from "../../shared/rsvp";
 import { DeliveryProviderError, providerName, sendDelivery } from "../lib/delivery";
 import { apiError, json, readJson, validationError } from "../lib/http";
+import { queueEventUpdateNotifications } from "../lib/automation";
+import { encryptRsvpToken } from "../lib/token-vault";
 import type { AppPagesFunction, Env, OrganizerIdentity } from "../lib/types";
 
 interface RsvpEventRow {
@@ -28,6 +30,7 @@ interface RsvpEventRow {
   stakes_notes: string | null;
   status: "draft" | "open" | "active" | "completed" | "cancelled" | "archived";
   rsvp_location_visibility: RsvpLocationVisibility;
+  invite_automation_enabled: number;
 }
 
 interface RsvpPlayerRow {
@@ -114,7 +117,7 @@ async function getEvent(db: D1Database, eventId: string): Promise<RsvpEventRow |
     .prepare(
       `SELECT e.id, e.title, e.starts_at, host.display_name AS host_name,
               e.location, e.game_notes, e.stakes_notes, e.status,
-              e.rsvp_location_visibility
+              e.rsvp_location_visibility, e.invite_automation_enabled
        FROM events e
        LEFT JOIN players host ON host.id = e.host_player_id
        WHERE e.id = ?1`,
@@ -264,6 +267,7 @@ async function detail(db: D1Database, eventId: string): Promise<Response> {
       stakesNotes: event.stakes_notes,
       status: event.status,
       locationVisibility: event.rsvp_location_visibility,
+      inviteAutomationEnabled: Boolean(event.invite_automation_enabled),
     },
     players: players.map(playerJson),
   });
@@ -286,13 +290,16 @@ async function prepareInvite(
   event: RsvpEventRow,
   player: RsvpPlayerRow,
   origin: string,
-): Promise<{ generated: GeneratedInvite; tokenHash: string; inviteId: string }> {
+  tokenSecret: string,
+): Promise<{ generated: GeneratedInvite; tokenHash: string; tokenCiphertext: string; inviteId: string }> {
   const token = createRsvpToken();
   const tokenHash = await hashRsvpToken(token);
+  const tokenCiphertext = await encryptRsvpToken(token, tokenSecret);
   const expiresAt = invitationExpiresAt(event.starts_at);
   const url = `${origin.replace(/\/+$/u, "")}/rsvp/${token}`;
   return {
     tokenHash,
+    tokenCiphertext,
     inviteId: player.invite_id ?? crypto.randomUUID(),
     generated: {
       playerId: player.player_id,
@@ -320,6 +327,7 @@ function upsertInviteStatement(
   inviteId: string,
   organizer: OrganizerIdentity,
   tokenHash: string,
+  tokenCiphertext: string,
   expiresAt: string,
   now: string,
 ): D1PreparedStatement {
@@ -327,14 +335,15 @@ function upsertInviteStatement(
     .prepare(
       `INSERT INTO event_invites
        (id, event_player_id, token_hash, expires_at, revoked_at,
-        last_response_at, response_count, created_by_organizer_id, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, NULL, NULL, 0, ?5, ?6, ?6)
+        last_response_at, response_count, created_by_organizer_id, created_at, updated_at, token_ciphertext)
+       VALUES (?1, ?2, ?3, ?4, NULL, NULL, 0, ?5, ?6, ?6, ?7)
        ON CONFLICT(event_player_id) DO UPDATE SET
          token_hash = excluded.token_hash,
          expires_at = excluded.expires_at,
          revoked_at = NULL,
          created_by_organizer_id = excluded.created_by_organizer_id,
          created_at = excluded.created_at,
+         token_ciphertext = excluded.token_ciphertext,
          updated_at = excluded.updated_at`,
     )
     .bind(
@@ -344,6 +353,7 @@ function upsertInviteStatement(
       expiresAt,
       organizer.id,
       now,
+      tokenCiphertext,
     );
 }
 
@@ -354,11 +364,12 @@ async function generateOne(
   playerId: string,
   organizer: OrganizerIdentity,
   origin: string,
+  tokenSecret: string,
 ): Promise<Response> {
   const event = await requireEvent(db, eventId);
   requireMutableEvent(event);
   const player = await requireInvitedPlayer(db, eventId, playerId);
-  const prepared = await prepareInvite(event, player, origin);
+  const prepared = await prepareInvite(event, player, origin, tokenSecret);
   const now = new Date().toISOString();
   await db.batch([
     upsertInviteStatement(
@@ -367,6 +378,7 @@ async function generateOne(
       prepared.inviteId,
       organizer,
       prepared.tokenHash,
+      prepared.tokenCiphertext,
       prepared.generated.expiresAt,
       now,
     ),
@@ -387,6 +399,7 @@ async function generateAll(
   eventId: string,
   organizer: OrganizerIdentity,
   origin: string,
+  tokenSecret: string,
 ): Promise<Response> {
   const event = await requireEvent(db, eventId);
   requireMutableEvent(event);
@@ -394,7 +407,7 @@ async function generateAll(
   if (!players.length) return apiError(409, "NO_INVITEES", "Add invited players before generating links.");
 
   const prepared = await Promise.all(
-    players.map((player) => prepareInvite(event, player, origin)),
+    players.map((player) => prepareInvite(event, player, origin, tokenSecret)),
   );
   const now = new Date().toISOString();
   const statements: D1PreparedStatement[] = [];
@@ -408,6 +421,7 @@ async function generateAll(
         invite.inviteId,
         organizer,
         invite.tokenHash,
+        invite.tokenCiphertext,
         invite.generated.expiresAt,
         now,
       ),
@@ -470,6 +484,10 @@ function deliveryMessage(
     gameNotes: event.game_notes,
     stakesNotes: event.stakes_notes,
     rsvpUrl: url,
+    calendarUrl: `${origin.replace(/\/+$/u, "")}/rsvp-api/${encodeURIComponent(url.split("/rsvp/").pop() ?? "")}/calendar.ics`,
+    directionsUrl: event.location
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`
+      : null,
   };
   if (channel === "email") {
     const email = buildPersonalizedInviteEmail(input);
@@ -626,7 +644,7 @@ async function deliveries(db: D1Database, eventId: string): Promise<Response> {
       .all<DeliveryRow>(),
     db
       .prepare(
-        `SELECT id, policy, source, status, requested_count, sent_count,
+        `SELECT id, policy, source, notification_type, status, requested_count, sent_count,
                 failed_count, skipped_count, created_at, completed_at
          FROM delivery_batches
          WHERE event_id = ?1
@@ -658,6 +676,7 @@ async function deliveries(db: D1Database, eventId: string): Promise<Response> {
       id: batch.id,
       policy: batch.policy,
       source: batch.source,
+      notificationType: batch.notification_type,
       status: batch.status,
       summary: {
         requested: Number(batch.requested_count),
@@ -676,6 +695,7 @@ interface DeliveryBatchRow {
   requested_channels_json: string;
   policy: "requested_channels" | "preferred_with_fallback";
   source: "manual" | "scheduled";
+  notification_type: "invite" | "reminder" | "event_update";
   status: "sending" | "completed" | "partial" | "failed";
   requested_count: number;
   sent_count: number;
@@ -720,6 +740,7 @@ async function batchResponse(db: D1Database, batchId: string): Promise<Response>
     batchId: batch.id,
     policy: batch.policy,
     source: batch.source,
+    notificationType: batch.notification_type,
     summary: {
       requested: Number(batch.requested_count),
       sent: Number(batch.sent_count),
@@ -810,7 +831,7 @@ async function sendInvites(
   );
 
   for (const player of selectedPlayers) {
-    const prepared = await prepareInvite(event, player, origin);
+    const prepared = await prepareInvite(event, player, origin, env.RSVP_TOKEN_ENCRYPTION_KEY ?? "development-rsvp-token-key");
     setupStatements.push(
       upsertInviteStatement(
         db,
@@ -818,6 +839,7 @@ async function sendInvites(
         prepared.inviteId,
         organizer,
         prepared.tokenHash,
+        prepared.tokenCiphertext,
         prepared.generated.expiresAt,
         now,
       ),
@@ -1073,16 +1095,46 @@ async function retryDelivery(
 ): Promise<Response> {
   const row = await db
     .prepare(
-      `SELECT d.status, d.channel, ep.event_id, ep.player_id
+      `SELECT d.status, d.channel, ep.event_id, ep.player_id, d.event_invite_id,
+              b.notification_type
        FROM invite_deliveries d
        JOIN event_invites ei ON ei.id = d.event_invite_id
        JOIN event_players ep ON ep.id = ei.event_player_id
+       LEFT JOIN delivery_batches b ON b.id = d.batch_id
        WHERE d.id = ?1`,
     )
     .bind(deliveryId)
-    .first<{ status: DeliveryStatus; channel: DeliveryChannel; event_id: string; player_id: string }>();
+    .first<{
+      status: DeliveryStatus;
+      channel: DeliveryChannel;
+      event_id: string;
+      player_id: string;
+      notification_type: "invite" | "reminder" | "event_update" | null;
+    }>();
   if (!row) return apiError(404, "DELIVERY_NOT_FOUND", "Delivery attempt not found.");
   if (row.status !== "failed") return apiError(409, "DELIVERY_NOT_FAILED", "Only failed deliveries can be retried.");
+
+  if (row.notification_type === "reminder" || row.notification_type === "event_update") {
+    const now = new Date().toISOString();
+    if (row.notification_type === "reminder") {
+      await db
+        .prepare(
+          `UPDATE delivery_schedules SET status = 'pending', scheduled_for = ?1, last_error = NULL, updated_at = ?1
+           WHERE event_player_id = ?2 AND status = 'failed'`,
+        )
+        .bind(now, row.player_id)
+        .run();
+    } else {
+      await db
+        .prepare(
+          `UPDATE event_update_notifications SET status = 'pending', last_error = NULL, updated_at = ?1
+           WHERE event_player_id = ?2 AND status = 'failed'`,
+        )
+        .bind(now, row.player_id)
+        .run();
+    }
+    return json({ queued: true, notificationType: row.notification_type });
+  }
 
   const retryRequest = new Request(request.url, {
     method: "POST",
@@ -1150,6 +1202,7 @@ async function patchEvent(
       now,
     ),
   ]);
+  await queueEventUpdateNotifications(db, eventId, ["locationVisibility"], now);
   return detail(db, eventId);
 }
 
@@ -1204,6 +1257,7 @@ export const onRequest: AppPagesFunction = async (context) => {
         parts[1],
         context.data.organizer,
         publicOrigin(request, context.env),
+        context.env.RSVP_TOKEN_ENCRYPTION_KEY ?? "development-rsvp-token-key",
       );
     }
     if (
@@ -1222,6 +1276,7 @@ export const onRequest: AppPagesFunction = async (context) => {
         parts[3],
         context.data.organizer,
         publicOrigin(request, context.env),
+        context.env.RSVP_TOKEN_ENCRYPTION_KEY ?? "development-rsvp-token-key",
       );
     }
     if (

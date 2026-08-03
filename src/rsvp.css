@@ -27,6 +27,14 @@
   letter-spacing: -0.045em;
 }
 
+.public-rsvp-lede {
+  max-width: 48ch;
+  margin: -0.5rem 0 0;
+  color: var(--muted);
+  font-size: 1.03rem;
+  line-height: 1.6;
+}
+
 .public-rsvp-brand {
   display: inline-flex;
   align-items: center;
@@ -162,6 +170,23 @@
 .rsvp-choice:disabled {
   cursor: not-allowed;
   opacity: 0.62;
+}
+
+.public-rsvp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.public-rsvp-actions .button {
+  flex: 1 1 180px;
+}
+
+.public-rsvp-location-revealed {
+  margin: -0.5rem 0 0;
+  color: var(--green);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .public-rsvp-footnote {
@@ -427,6 +452,10 @@
 
   .rsvp-choice {
     min-height: 58px;
+  }
+
+  .public-rsvp-actions {
+    display: grid;
   }
 
   .rsvp-admin-actions {

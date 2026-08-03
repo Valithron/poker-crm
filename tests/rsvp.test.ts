@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPersonalizedInviteText,
+  buildCalendarFile,
   hashRsvpToken,
   invitationExpiresAt,
   isPlausibleRsvpToken,
@@ -40,5 +41,20 @@ describe("private RSVP invitation helpers", () => {
     expect(isPlausibleRsvpToken(token)).toBe(true);
     expect(isPlausibleRsvpToken("too-short")).toBe(false);
     expect(await hashRsvpToken(token)).toBe(await hashRsvpToken(token));
+  });
+
+  it("builds a four-hour calendar event with the RSVP link", () => {
+    const calendar = buildCalendarFile({
+      uid: "invite-123",
+      title: "Friday Poker Night",
+      startsAt: "2026-07-24T19:00:00-06:00",
+      location: "123 Main Street",
+      url: "https://poker.skpfam.com/rsvp/example-token",
+    });
+    expect(calendar).toContain("SUMMARY:Friday Poker Night");
+    expect(calendar).toContain("DTSTART:20260725T010000Z");
+    expect(calendar).toContain("DTEND:20260725T050000Z");
+    expect(calendar).toContain("URL:https://poker.skpfam.com/rsvp/example-token");
+    expect(calendar).toContain("LOCATION:123 Main Street");
   });
 });

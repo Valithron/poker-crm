@@ -89,8 +89,9 @@ Add these as encrypted Pages secrets for live delivery:
 
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
+- `RSVP_TOKEN_ENCRYPTION_KEY` — a long random secret shared by the Pages Functions and reminder Worker. It lets automated messages reuse the current RSVP link without rotating it.
 
-SMS provider secrets and the reminder Worker are intentionally not required for the email-first invitation release. They remain follow-on work and should not block the first live email test.
+The optional reminder Worker also needs `RESEND_API_KEY`, `EMAIL_FROM`, `PUBLIC_APP_ORIGIN`, and `RSVP_TOKEN_ENCRYPTION_KEY` as Worker variables/secrets, plus the same production D1 binding. Deploy it from `wrangler.worker.jsonc` after replacing the example database ID. Its 15-minute Cron Trigger sends only for events with **Automate invitee emails** enabled.
 
 Keep the application and Resend tracking DNS records separate. The application hostname `poker.skpfam.com` must continue pointing to the Cloudflare Pages project. If Resend tracking is enabled, use the separate `clicks-poker.skpfam.com` hostname for the Resend tracking CNAME; never replace the application `poker` record with the Resend tracking target.
 
@@ -142,3 +143,5 @@ npm run dev
 - The email-first Invite roster action creates a delivery record containing a working RSVP link.
 - A manual email batch returns a batch summary and can be retried without deleting the original attempt.
 - The development sink can exercise the full workflow without Resend credentials.
+- An invitee can add the night to a calendar, open directions, and submit RSVP without an account.
+- An enabled event queues one 24-hour reminder for pending RSVPs and update emails when material details change.

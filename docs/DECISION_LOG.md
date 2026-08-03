@@ -43,3 +43,10 @@ Sterling approved the following direction:
 - A development delivery sink allows local and preview testing without provider credentials.
 - Delivery is synchronous and organizer-triggered for initial invitations; scheduled reminders are now implemented as a follow-on Cron Worker workflow.
 - Build and preview environments may use `AUTH_MODE=public` with `DEV_ORGANIZER_EMAIL` so login setup does not block construction.
+
+## 2026-08-03: Invitee follow-up experience
+
+- Invitees use a private RSVP link without an account and can add the event to a calendar or open Google Maps directions.
+- Automated follow-up is opt-in per event and email-only: one reminder 24 hours before the start for pending RSVPs, plus update emails after material event-detail changes.
+- Automated messages reuse the existing RSVP token. Pages Functions store an encrypted token copy using `RSVP_TOKEN_ENCRYPTION_KEY`; the public RSVP API continues to validate the hash.
+- SMS remains a later channel; the worker does not send text messages in this phase.

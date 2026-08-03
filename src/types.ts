@@ -30,6 +30,7 @@ export interface PokerEvent {
   location: string;
   gameNotes: string | null;
   notes: string | null;
+  inviteAutomationEnabled: boolean;
   status: EventStatus;
   attendanceCount: number;
   playerCount: number;

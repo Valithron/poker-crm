@@ -858,6 +858,7 @@ function EventDetailPage() {
           location: formValue(fields, "location"),
           gameNotes: formValue(fields, "gameNotes") || null,
           notes: formValue(fields, "notes") || null,
+          inviteAutomationEnabled: fields.get("inviteAutomationEnabled") === "on",
           ...correctionFields,
         }),
       });
@@ -1190,6 +1191,18 @@ function EventDetailPage() {
               maxLength={240}
               disabled={editDisabled}
             />
+          </label>
+          <label className="checkbox-field form-grid-wide">
+            <input
+              name="inviteAutomationEnabled"
+              type="checkbox"
+              defaultChecked={event.inviteAutomationEnabled}
+              disabled={editDisabled}
+            />
+            <span>
+              <strong>Automate invitee emails</strong>
+              <small>Send a 24-hour reminder to pending RSVPs and email invited players when event details change.</small>
+            </span>
           </label>
           <label className="form-grid-wide">
             Game and house-rule notes
