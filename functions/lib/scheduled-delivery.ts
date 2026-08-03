@@ -269,7 +269,7 @@ async function processRow(db: D1Database, env: Env, row: NotificationRow, origin
     rsvpUrl,
     calendarUrl: calendarUrl(origin, token),
     directionsUrl: row.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(row.location)}` : null,
-    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon.png`,
+    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon-v3.png`,
   };
   const email = isReminder ? buildPersonalizedReminderEmail(input) : buildPersonalizedUpdateEmail(input, fields);
   const provider = providerName("email", env);
