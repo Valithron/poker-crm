@@ -16,6 +16,9 @@ export type RsvpStatus = (typeof rsvpStatuses)[number];
 export const invitationStatuses = ["invited", "not_invited"] as const;
 export type InvitationStatus = (typeof invitationStatuses)[number];
 
+export const preferredChannels = ["email", "sms"] as const;
+export type PreferredChannel = (typeof preferredChannels)[number];
+
 const optionalEmail = z.string().trim().email().max(200).optional().or(z.literal(""));
 const correctionNote = z.string().trim().min(3).max(500).optional();
 
@@ -25,6 +28,7 @@ export const playerCreateSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),
   email: optionalEmail,
   phone: z.string().trim().max(40).optional(),
+  preferredChannel: z.enum(preferredChannels).default("email"),
   notes: z.string().trim().max(1000).optional(),
 });
 
@@ -35,6 +39,7 @@ export const playerPatchSchema = z
     displayName: z.string().trim().max(120).optional(),
     email: optionalEmail,
     phone: z.string().trim().max(40).optional(),
+    preferredChannel: z.enum(preferredChannels).optional(),
     notes: z.string().trim().max(1000).optional(),
     status: z.enum(["active", "archived"]).optional(),
   })

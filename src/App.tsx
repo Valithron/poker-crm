@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { api, ApiError } from "./api";
 import { BrandMark } from "./BrandMark";
+import { useLocalDraft } from "./useLocalDraft";
 import type {
   DashboardData,
   EventAuditEntry,
@@ -28,6 +29,15 @@ interface EventDetailResponse {
   players: EventPlayer[];
   audits: EventAuditEntry[];
 }
+
+const newEventInitialDraft = {
+  title: "Poker Night",
+  startsAt: "",
+  hostPlayerId: "",
+  location: "",
+  gameNotes: "",
+  notes: "",
+};
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -232,6 +242,7 @@ function DashboardPage() {
 function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>();
   const [filter, setFilter] = useState<"active" | "archived" | "all">("active");
+  const [query, setQuery] = useState("");
   const [error, setError] = useState<unknown>();
   const [saving, setSaving] = useState(false);
 
@@ -248,6 +259,16 @@ function PlayersPage() {
   useEffect(() => {
     void load(filter);
   }, [filter]);
+
+  const visiblePlayers = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return players ?? [];
+    return (players ?? []).filter((player) =>
+      [player.displayName, player.email ?? "", player.phone ?? ""].some((value) =>
+        value.toLowerCase().includes(normalized),
+      ),
+    );
+  }, [players, query]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -330,13 +351,22 @@ function PlayersPage() {
                 ))}
               </div>
             </div>
-            <span>{players?.length ?? 0}</span>
+            <span>{visiblePlayers.length} shown</span>
           </div>
+          <label className="search-field directory-search">
+            <span className="sr-only">Search players</span>
+            <input
+              type="search"
+              placeholder="Search by name, email, or phone"
+              value={query}
+              onChange={(change) => setQuery(change.target.value)}
+            />
+          </label>
           {!players ? (
             <Loading label="Loading players" />
-          ) : players.length ? (
+          ) : visiblePlayers.length ? (
             <div className="person-list">
-              {players.map((player) => (
+              {visiblePlayers.map((player) => (
                 <Link className="person-row" to={`/players/${player.id}`} key={player.id}>
                   <span className="avatar" aria-hidden="true">
                     {player.displayName.slice(0, 1).toUpperCase()}
@@ -346,7 +376,11 @@ function PlayersPage() {
                       <strong>{player.displayName}</strong>
                       <PlayerStatusBadge status={player.status} />
                     </span>
-                    <small>{player.email || player.phone || "No contact details"}</small>
+                    <small>
+                      {player.email ? <span className="contact-chip">Email</span> : null}
+                      {player.phone ? <span className="contact-chip">Text</span> : null}
+                      {!player.email && !player.phone ? "No contact details" : null}
+                    </small>
                   </span>
                 </Link>
               ))}
@@ -520,6 +554,7 @@ function NewEventPage() {
   const [error, setError] = useState<unknown>();
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
+  const draft = useLocalDraft("brotm:new-event", newEventInitialDraft);
 
   useEffect(() => {
     api<{ players: Player[] }>("/api/players")
@@ -529,22 +564,22 @@ function NewEventPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fields = new FormData(event.currentTarget);
     setSaving(true);
     setError(undefined);
     try {
-      const startsAt = new Date(formValue(fields, "startsAt")).toISOString();
+      const startsAt = new Date(draft.value.startsAt).toISOString();
       const response = await api<{ event: PokerEvent }>("/api/events", {
         method: "POST",
         body: JSON.stringify({
-          title: formValue(fields, "title"),
+          title: draft.value.title,
           startsAt,
-          hostPlayerId: formValue(fields, "hostPlayerId") || null,
-          location: formValue(fields, "location"),
-          gameNotes: formValue(fields, "gameNotes") || undefined,
-          notes: formValue(fields, "notes") || undefined,
+          hostPlayerId: draft.value.hostPlayerId || null,
+          location: draft.value.location,
+          gameNotes: draft.value.gameNotes || undefined,
+          notes: draft.value.notes || undefined,
         }),
       });
+      draft.clear();
       navigate(`/events/${response.event.id}`);
     } catch (caught) {
       setError(caught);
@@ -557,19 +592,20 @@ function NewEventPage() {
     <>
       <PageHeader eyebrow="Plan" title="New poker night" />
       {error ? <ErrorPanel error={error} /> : null}
+      {draft.savedAt ? <p className="draft-status">Draft saved on this device.</p> : null}
       <section className="panel narrow-panel">
         <form className="form-stack" onSubmit={submit}>
           <label>
             Event title
-            <input name="title" defaultValue="Poker Night" required maxLength={120} />
+            <input name="title" value={draft.value.title} onChange={(change) => draft.setValue((current) => ({ ...current, title: change.target.value }))} required maxLength={120} />
           </label>
           <label>
             Date and start time
-            <input name="startsAt" type="datetime-local" required />
+            <input name="startsAt" type="datetime-local" value={draft.value.startsAt} onChange={(change) => draft.setValue((current) => ({ ...current, startsAt: change.target.value }))} required />
           </label>
           <label>
             Host <span className="field-hint">optional</span>
-            <select name="hostPlayerId" defaultValue="">
+            <select name="hostPlayerId" value={draft.value.hostPlayerId} onChange={(change) => draft.setValue((current) => ({ ...current, hostPlayerId: change.target.value }))}>
               <option value="">No host selected</option>
               {players.map((player) => (
                 <option value={player.id} key={player.id}>
@@ -580,15 +616,15 @@ function NewEventPage() {
           </label>
           <label>
             Location or address
-            <input name="location" maxLength={240} />
+            <input name="location" value={draft.value.location} onChange={(change) => draft.setValue((current) => ({ ...current, location: change.target.value }))} maxLength={240} />
           </label>
           <label>
             Game and house-rule notes <span className="field-hint">optional</span>
-            <textarea name="gameNotes" rows={4} maxLength={1200} />
+            <textarea name="gameNotes" value={draft.value.gameNotes} onChange={(change) => draft.setValue((current) => ({ ...current, gameNotes: change.target.value }))} rows={4} maxLength={1200} />
           </label>
           <label>
             General event notes <span className="field-hint">optional</span>
-            <textarea name="notes" rows={4} maxLength={1200} />
+            <textarea name="notes" value={draft.value.notes} onChange={(change) => draft.setValue((current) => ({ ...current, notes: change.target.value }))} rows={4} maxLength={1200} />
           </label>
           <Button disabled={saving}>{saving ? "Creating…" : "Create draft"}</Button>
         </form>
@@ -630,6 +666,7 @@ function EventPlayerEditor({
         <div>
           <strong>{player.displayName}</strong>
           <small>{player.attended ? "Attended" : "Not checked in"}</small>
+          <small>{player.contact.email || "No email saved"}</small>
         </div>
       </div>
       <div className="roster-field-grid">
@@ -704,6 +741,7 @@ function EventPlayerEditor({
 
 function EventDetailPage() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<PokerEvent>();
   const [eventPlayers, setEventPlayers] = useState<EventPlayer[]>([]);
   const [audits, setAudits] = useState<EventAuditEntry[]>([]);
@@ -714,14 +752,23 @@ function EventDetailPage() {
   const [error, setError] = useState<unknown>();
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string>();
+  const [lastUpdated, setLastUpdated] = useState<string>();
+  const [stale, setStale] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [rosterQuery, setRosterQuery] = useState("");
+  const [rosterFilter, setRosterFilter] = useState<"all" | "expected" | "attending" | "pending">("all");
+  const eventNotesDraft = useLocalDraft(`brotm:event:${id}:notes`, event?.notes ?? "");
 
   const applyDetail = (detail: EventDetailResponse) => {
     setEvent(detail.event);
     setEventPlayers(detail.players);
     setAudits(detail.audits);
+    setLastUpdated(new Date().toISOString());
+    setStale(false);
   };
 
-  const load = async () => {
+  const load = async (silent = false) => {
+    if (!silent) setRefreshing(true);
     try {
       const [detail, players] = await Promise.all([
         api<EventDetailResponse>(`/api/events/${id}`),
@@ -731,18 +778,59 @@ function EventDetailPage() {
       setDirectory(players.players);
       setError(undefined);
     } catch (caught) {
-      setError(caught);
+      setStale(true);
+      if (!silent) setError(caught);
+    } finally {
+      if (!silent) setRefreshing(false);
     }
   };
 
   useEffect(() => {
     void load();
+    const refresh = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
+    const interval = window.setInterval(refresh, 15_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [id]);
 
   const availablePlayers = useMemo(
     () => directory.filter((player) => !eventPlayers.some((entry) => entry.playerId === player.id)),
     [directory, eventPlayers],
   );
+
+  const visiblePlayers = useMemo(() => {
+    const query = rosterQuery.trim().toLowerCase();
+    return eventPlayers.filter((player) => {
+      const matchesQuery = !query || player.displayName.toLowerCase().includes(query);
+      const matchesFilter =
+        rosterFilter === "all" ||
+        (rosterFilter === "expected" && ["yes", "maybe"].includes(player.rsvpStatus)) ||
+        (rosterFilter === "attending" && player.attended) ||
+        (rosterFilter === "pending" && player.invitationStatus === "invited" && player.rsvpStatus === "pending");
+      return matchesQuery && matchesFilter;
+    });
+  }, [eventPlayers, rosterFilter, rosterQuery]);
+
+  const expectedCount = eventPlayers.filter((player) => ["yes", "maybe"].includes(player.rsvpStatus)).length;
+  const checkedInCount = eventPlayers.filter((player) => player.attended).length;
+  const pendingCount = eventPlayers.filter(
+    (player) => player.invitationStatus === "invited" && player.rsvpStatus === "pending",
+  ).length;
+  const inviteReadiness = useMemo(() => {
+    const eligible = eventPlayers.filter((player) => player.invitationStatus === "invited");
+    const emailReady = eligible.filter((eventPlayer) => directory.some((player) => player.id === eventPlayer.playerId && Boolean(player.email)));
+    return {
+      eligible: eligible.length,
+      emailReady: emailReady.length,
+      missingEmail: eligible.length - emailReady.length,
+      excluded: eventPlayers.length - eligible.length,
+    };
+  }, [directory, eventPlayers]);
 
   if (error && !event) return <ErrorPanel error={error} />;
   if (!event) return <Loading label="Loading poker night" />;
@@ -774,6 +862,7 @@ function EventDetailPage() {
         }),
       });
       await load();
+      eventNotesDraft.clear();
       setSavedMessage(locked ? "Completed event correction saved and audited." : "Event details saved.");
     } catch (caught) {
       setError(caught);
@@ -900,15 +989,40 @@ function EventDetailPage() {
     }
   }
 
+  async function duplicate() {
+    setSaving(true);
+    setError(undefined);
+    try {
+      const response = await api<{ event: { id: string } }>(`/ops-api/events/${id}/duplicate`, { method: "POST" });
+      navigate(`/events/${response.event.id}`);
+    } catch (caught) {
+      setError(caught);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
         eyebrow="Poker night"
         title={event.title}
-        actions={<StatusBadge status={event.status} />}
+        actions={
+          <>
+            {!locked ? <Button type="button" variant="secondary" disabled={saving} onClick={() => void duplicate()}>Duplicate</Button> : null}
+            <StatusBadge status={event.status} />
+          </>
+        }
       />
       {error ? <ErrorPanel error={error} /> : null}
       {savedMessage ? <SuccessPanel>{savedMessage}</SuccessPanel> : null}
+      <div className={`sync-status ${stale ? "is-stale" : ""}`} role="status">
+        <span>{stale ? "Live data may be out of date." : "Live workspace"}</span>
+        <span>{lastUpdated ? `Updated ${formatDate(lastUpdated)}` : "Connecting…"}</span>
+        <Button type="button" variant="secondary" disabled={refreshing || saving} onClick={() => void load()}>
+          {refreshing ? "Refreshing…" : "Refresh"}
+        </Button>
+      </div>
 
       <section className="event-hero panel">
         <div>
@@ -926,6 +1040,44 @@ function EventDetailPage() {
         <div>
           <span>Attendance</span>
           <strong>{event.attendanceCount}</strong>
+        </div>
+      </section>
+
+      <section className="live-summary-bar" aria-label="Live night summary">
+        <div><strong>{checkedInCount}</strong><span>checked in</span></div>
+        <div><strong>{expectedCount}</strong><span>expected</span></div>
+        <div><strong>{pendingCount}</strong><span>awaiting RSVP</span></div>
+        <div><strong>{eventPlayers.length}</strong><span>rostered</span></div>
+      </section>
+
+      <section className="panel invite-readiness-panel" aria-labelledby="invite-readiness-title">
+        <div>
+          <p className="eyebrow">Invitation workflow</p>
+          <h2 id="invite-readiness-title">{event.status === "draft" ? "Get this night ready to invite" : "Invite the roster"}</h2>
+          <p className="panel-muted">
+            {event.status === "draft"
+              ? "Save the event details, add the players, then open invitations to review the email roster."
+              : "Review the email-ready players, confirm once, and send each person a private RSVP link."}
+          </p>
+        </div>
+        <div className="invite-readiness-stats">
+          <span><strong>{inviteReadiness.eligible}</strong> eligible</span>
+          <span><strong>{inviteReadiness.emailReady}</strong> email-ready</span>
+          <span className={inviteReadiness.missingEmail ? "is-warning" : ""}><strong>{inviteReadiness.missingEmail}</strong> missing email</span>
+          <span><strong>{inviteReadiness.excluded}</strong> excluded</span>
+        </div>
+        <div className="invite-readiness-actions">
+          {event.status === "draft" ? (
+            <Button type="button" disabled={saving} onClick={() => void transition("open")}>
+              Open invitations
+            </Button>
+          ) : null}
+          {event.status === "open" || event.status === "active" ? (
+            <Button type="button" disabled={saving || !inviteReadiness.eligible} onClick={() => navigate(`/events/${id}/rsvp-links?invite=1`)}>
+              Invite roster
+            </Button>
+          ) : null}
+          <Link className="button button-secondary" to={`/events/${id}/rsvp-links`}>Review RSVP setup</Link>
         </div>
       </section>
 
@@ -976,11 +1128,6 @@ function EventDetailPage() {
         </section>
       ) : (
         <section className="workflow-bar" aria-label="Event workflow actions">
-          {event.status === "draft" ? (
-            <Button onClick={() => void transition("open")} disabled={saving}>
-              Open invitations
-            </Button>
-          ) : null}
           {event.status === "open" ? (
             <Button onClick={() => void transition("active")} disabled={saving}>
               Start Live Night
@@ -1059,11 +1206,15 @@ function EventDetailPage() {
             <textarea
               name="notes"
               rows={4}
-              defaultValue={event.notes ?? ""}
+              value={eventNotesDraft.value}
+              onChange={(change) => eventNotesDraft.setValue(change.target.value)}
               maxLength={1200}
               disabled={editDisabled}
             />
           </label>
+          {eventNotesDraft.savedAt ? (
+            <small className="draft-status form-grid-wide">Draft saved locally. It is not synced until you save event details.</small>
+          ) : null}
           <Button className="form-grid-action" disabled={editDisabled}>
             {saving ? "Saving…" : "Save event details"}
           </Button>
@@ -1077,7 +1228,7 @@ function EventDetailPage() {
               <p className="eyebrow">Roster</p>
               <h2>Players and attendance</h2>
             </div>
-            <span>{eventPlayers.length}</span>
+            <span>{visiblePlayers.length} shown</span>
           </div>
 
           <div className="inline-form">
@@ -1104,9 +1255,33 @@ function EventDetailPage() {
             </Button>
           </div>
 
+          <div className="roster-toolbar">
+            <label className="search-field">
+              <span className="sr-only">Search roster</span>
+              <input
+                type="search"
+                placeholder="Search players"
+                value={rosterQuery}
+                onChange={(change) => setRosterQuery(change.target.value)}
+              />
+            </label>
+            <div className="roster-filters" aria-label="Roster filter">
+              {(["all", "expected", "attending", "pending"] as const).map((filter) => (
+                <button
+                  className={`roster-filter ${rosterFilter === filter ? "active" : ""}`}
+                  type="button"
+                  key={filter}
+                  onClick={() => setRosterFilter(filter)}
+                >
+                  {filter === "all" ? "Everyone" : filter === "expected" ? "Expected" : filter === "attending" ? "Checked in" : "Pending"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="live-roster">
-            {eventPlayers.length ? (
-              eventPlayers.map((player) => (
+            {visiblePlayers.length ? (
+              visiblePlayers.map((player) => (
                 <EventPlayerEditor
                   key={player.id}
                   player={player}
@@ -1117,7 +1292,7 @@ function EventDetailPage() {
                 />
               ))
             ) : (
-              <EmptyState>Add players to build the event roster.</EmptyState>
+              <EmptyState>{eventPlayers.length ? "No roster players match this view." : "Add players to build the event roster."}</EmptyState>
             )}
           </div>
         </section>
@@ -1154,12 +1329,26 @@ function EventDetailPage() {
 function HistoryPage() {
   const [events, setEvents] = useState<PokerEvent[]>();
   const [error, setError] = useState<unknown>();
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     api<{ events: PokerEvent[] }>("/api/events?status=completed")
       .then((response) => setEvents(response.events))
       .catch(setError);
   }, []);
+
+  const visibleEvents = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return events ?? [];
+    return (events ?? []).filter((event) =>
+      [event.title, event.location, event.hostName ?? ""].some((value) =>
+        value.toLowerCase().includes(normalized),
+      ),
+    );
+  }, [events, query]);
+
+  const attendanceTotal = (events ?? []).reduce((total, event) => total + event.attendanceCount, 0);
+  const attendanceAverage = events?.length ? Math.round(attendanceTotal / events.length) : 0;
 
   return (
     <>
@@ -1168,9 +1357,25 @@ function HistoryPage() {
       {!events ? (
         <Loading label="Loading history" />
       ) : events.length ? (
-        <div className="card-list event-grid">
-          {events.map((event) => <EventCard event={event} key={event.id} />)}
-        </div>
+        <>
+          <section className="metric-grid history-summary" aria-label="Attendance history summary">
+            <article className="metric-card"><span>Completed nights</span><strong>{events.length}</strong></article>
+            <article className="metric-card"><span>Total check-ins</span><strong>{attendanceTotal}</strong></article>
+            <article className="metric-card"><span>Average attendance</span><strong>{attendanceAverage}</strong></article>
+          </section>
+          <label className="search-field history-search">
+            <span className="sr-only">Search history</span>
+            <input
+              type="search"
+              placeholder="Search completed nights"
+              value={query}
+              onChange={(change) => setQuery(change.target.value)}
+            />
+          </label>
+          {visibleEvents.length ? <div className="card-list event-grid">
+            {visibleEvents.map((event) => <EventCard event={event} key={event.id} />)}
+          </div> : <EmptyState>No completed nights match that search.</EmptyState>}
+        </>
       ) : (
         <EmptyState>Complete the first poker night to begin history.</EmptyState>
       )}

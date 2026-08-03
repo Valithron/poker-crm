@@ -65,6 +65,8 @@ async function verifyAccessToken(token: string, env: Env): Promise<string> {
 
   if (header.alg !== "RS256" || !header.kid) throw new Error("Unsupported Access token");
 
+  if (!env.TEAM_DOMAIN || !env.POLICY_AUD) throw new Error("Access configuration is incomplete");
+
   const expectedIssuer = `https://${env.TEAM_DOMAIN}`;
   const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
   const nowSeconds = Math.floor(Date.now() / 1000);
@@ -104,10 +106,13 @@ export async function resolveOrganizer(
   const token = request.headers.get("Cf-Access-Jwt-Assertion");
   let email: string;
 
-  if (token) {
-    email = await verifyAccessToken(token, env);
-  } else if (env.ENVIRONMENT === "development" && env.DEV_ORGANIZER_EMAIL) {
+  const publicMode = env.AUTH_MODE === "public" || (!env.AUTH_MODE && env.ENVIRONMENT === "development");
+
+  if (publicMode) {
+    if (!env.DEV_ORGANIZER_EMAIL) throw new Error("Public auth mode requires DEV_ORGANIZER_EMAIL");
     email = env.DEV_ORGANIZER_EMAIL.toLowerCase();
+  } else if (token) {
+    email = await verifyAccessToken(token, env);
   } else {
     throw new Error("Authentication required");
   }

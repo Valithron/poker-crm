@@ -34,8 +34,9 @@
   color: var(--gold);
 }
 
-.public-rsvp-brand span {
-  font-size: 1.5rem;
+.public-rsvp-brand .brand-mark {
+  width: 42px;
+  height: 42px;
 }
 
 .public-rsvp-details {
@@ -81,6 +82,44 @@
 .rsvp-privacy-panel p {
   margin: 0;
   color: var(--muted);
+}
+
+.rsvp-preflight-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.rsvp-preflight-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.rsvp-preflight-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.rsvp-preflight-stats span {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 7rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.rsvp-preflight-stats strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.rsvp-preflight-stats .is-warning strong {
+  color: var(--gold);
 }
 
 .rsvp-choice-grid {
@@ -139,6 +178,70 @@
   gap: 1rem;
 }
 
+.rsvp-admin-page > .page-header {
+  border-bottom: 1px solid rgba(215, 178, 103, 0.22);
+  padding-bottom: 1rem;
+}
+
+.invite-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.invite-dialog {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.invite-dialog h2,
+.invite-dialog p {
+  margin-top: 0;
+}
+
+.invite-dialog p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
+.invite-dialog-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.invite-dialog-summary span {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.invite-dialog-summary strong {
+  color: var(--text);
+  font-size: 1.25rem;
+}
+
+.invite-dialog-summary .is-warning strong {
+  color: var(--gold);
+}
+
+.invite-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
 .rsvp-privacy-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr);
@@ -174,8 +277,23 @@
 }
 
 .rsvp-admin-player span,
+.rsvp-admin-player small,
 .rsvp-admin-metadata small {
   color: var(--muted);
+}
+
+.rsvp-preferred-channel {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.rsvp-preferred-channel select {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  font: inherit;
 }
 
 .rsvp-link-status {
@@ -196,8 +314,57 @@
 
 .rsvp-admin-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.85fr) minmax(0, 0.7fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+.rsvp-delivery-history {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.rsvp-delivery-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.rsvp-delivery-row > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.rsvp-delivery-row > div:last-child {
+  text-align: right;
+}
+
+.rsvp-delivery-row span,
+.rsvp-delivery-row small {
+  color: var(--muted);
+}
+
+.rsvp-delivery-status {
+  font-weight: 850;
+  text-transform: capitalize;
+}
+
+.rsvp-delivery-status.is-sent {
+  color: var(--green);
+}
+
+.rsvp-delivery-status.is-failed {
+  color: var(--red);
+}
+
+.rsvp-delivery-status.is-sending {
+  color: var(--gold);
+}
+
+.state-error-text {
+  color: var(--red) !important;
 }
 
 .rsvp-generated-preview {
@@ -234,8 +401,21 @@
     border-radius: 16px;
   }
 
+  .rsvp-admin-page > .page-header .page-actions {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 25;
+    padding: 0.45rem;
+    border: 1px solid rgba(215, 178, 103, 0.24);
+    border-radius: 12px;
+    background: rgba(9, 11, 8, 0.94);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(14px);
+  }
+
   .public-rsvp-details > div,
   .rsvp-privacy-panel,
+  .rsvp-preflight-panel,
   .rsvp-admin-row,
   .rsvp-admin-actions {
     grid-template-columns: 1fr;
@@ -252,10 +432,21 @@
   .rsvp-admin-actions {
     grid-column: auto;
   }
-}
 
+  .invite-dialog-summary {
+    grid-template-columns: 1fr;
+  }
 
-.public-rsvp-brand .brand-mark {
-  width: 42px;
-  height: 42px;
+  .invite-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .rsvp-delivery-row {
+    display: grid;
+  }
+
+  .rsvp-delivery-row > div:last-child {
+    text-align: left;
+  }
 }

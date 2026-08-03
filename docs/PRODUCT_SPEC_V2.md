@@ -68,7 +68,7 @@ An organizer creates a poker night with:
 
 Initial status: `draft`.
 
-### Phase B: Invite
+### Phase B: Invite and deliver
 
 The organizer selects players from the directory and assigns an invitation state:
 
@@ -82,7 +82,7 @@ Each invited player can then receive an RSVP state:
 - `maybe`
 - `no`
 
-The MVP does not need to send messages. It should provide a clean invite summary and copyable invite text. Automatic email, SMS, and player RSVP links belong to a later phase.
+The organizer can manually send a personalized invitation by email. Each message contains a player-specific RSVP link, and the application records the delivery attempt and result. Copyable invite text remains available as a fallback. SMS uses the same delivery contracts as a follow-on channel.
 
 When the invite list is ready, the event becomes `open`.
 
@@ -151,6 +151,8 @@ No player-level totals are manually stored.
 - player directory
 - create and edit poker night
 - invite roster and RSVP states
+- email-first manual invitations
+- delivery history and provider errors
 - mobile Live Night mode
 - attendance check-in
 - optional cash ledger
@@ -165,8 +167,8 @@ No player-level totals are manually stored.
 ### Explicitly later
 
 - player accounts
-- self-service RSVP links
-- automated email or text delivery
+- player accounts
+- recurring delivery campaigns beyond the invitation and reminder workflow
 - public leaderboards
 - achievements or badges
 - poker strategy tools
@@ -310,6 +312,22 @@ Money is stored as integer cents.
 - `details_json`
 - `created_at`
 
+### `invite_deliveries`
+
+- `id`
+- `event_invite_id`
+- `channel`: `email` or `sms`
+- `destination`
+- `provider`
+- `status`: `sending`, `sent`, or `failed`
+- `provider_message_id`, nullable
+- `error_message`, nullable
+- `token_hash`
+- `requested_by_organizer_id`
+- `created_at`
+- `completed_at`, nullable
+- `updated_at`
+
 ## 9. Derived values
 
 The application derives these values rather than storing competing copies:
@@ -349,6 +367,8 @@ The application derives these values rather than storing competing copies:
 ### Authentication
 
 For the MVP, protect the organizer application with Cloudflare Access using approved organizer email addresses.
+
+During construction and preview testing, `AUTH_MODE=public` may resolve the organizer from `DEV_ORGANIZER_EMAIL` without requiring an Access login. Production can use `AUTH_MODE=access` when the application is ready for hardening.
 
 Pages Functions must still validate the signed Access JWT for API requests and use the verified email identity to resolve an active organizer record.
 
@@ -397,7 +417,7 @@ The first implementation should prove one complete path rather than build discon
 ### Excluded from the first slice
 
 - cash ledger
-- automatic invitations
+- live provider delivery
 - player accounts
 - analytics dashboards
 - public pages
@@ -409,7 +429,7 @@ This specification is approved when the following are accepted:
 - organizer-first scope
 - planning through closeout as the core workflow
 - players do not need accounts in the MVP
-- invitation delivery remains outside the app initially
+- email-first manual invitation delivery is included; SMS, scheduled reminders, and recurring campaigns remain later
 - attendance is required and money tracking is optional
 - D1 is the authoritative data store
 - Cloudflare Access protects the organizer application

@@ -1,6 +1,6 @@
 # Cloudflare v2 setup
 
-This guide connects the first BroTM Poker application slice to one remote D1 database and Cloudflare Access without committing account identifiers or personal email addresses.
+This guide connects BroTM Poker to one remote D1 database, Cloudflare Access, provider-backed invitation delivery, and the reminder Cron Worker without committing account identifiers or personal email addresses.
 
 ## 1. Create one D1 database
 
@@ -81,8 +81,20 @@ For the **Production** environment, add:
 - `TEAM_DOMAIN`: the Zero Trust team domain without `https://`
 - `POLICY_AUD`: the Access application audience tag
 - `ENVIRONMENT`: `production`
+- `AUTH_MODE`: `access`
+- `DELIVERY_MODE`: `live`
+- `PUBLIC_APP_ORIGIN`: the public application origin
 
-For Preview, `ENVIRONMENT=preview` may be set, but no production D1 binding should be attached.
+Add these as encrypted Pages secrets for live delivery:
+
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+
+SMS provider secrets and the reminder Worker are intentionally not required for the email-first invitation release. They remain follow-on work and should not block the first live email test.
+
+Keep the application and Resend tracking DNS records separate. The application hostname `poker.skpfam.com` must continue pointing to the Cloudflare Pages project. If Resend tracking is enabled, use the separate `clicks-poker.skpfam.com` hostname for the Resend tracking CNAME; never replace the application `poker` record with the Resend tracking target.
+
+For local and preview construction, use `AUTH_MODE=public`, `ENVIRONMENT=development`, and `DEV_ORGANIZER_EMAIL=<ORGANIZER_EMAIL>`. Set `DELIVERY_MODE=log` to use the development delivery sink. No Cloudflare Access application is required for these test environments.
 
 ## 7. Local development identity
 
@@ -90,9 +102,12 @@ Create a `.dev.vars` file:
 
 ```text
 ENVIRONMENT=development
+AUTH_MODE=public
+DELIVERY_MODE=log
 DEV_ORGANIZER_EMAIL=<ORGANIZER_EMAIL>
 TEAM_DOMAIN=unused-locally
 POLICY_AUD=unused-locally
+PUBLIC_APP_ORIGIN=http://localhost:8788
 ```
 
 The local organizer email must exist in the local D1 database.
@@ -123,3 +138,7 @@ npm run dev
 - A player can be added and checked in.
 - The event can move from draft to open to active to completed.
 - The completed event appears in History.
+- A manual email send creates a delivery record and the message contains a working RSVP link.
+- The email-first Invite roster action creates a delivery record containing a working RSVP link.
+- A manual email batch returns a batch summary and can be retried without deleting the original attempt.
+- The development sink can exercise the full workflow without Resend credentials.

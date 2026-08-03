@@ -14,6 +14,7 @@ export interface Player {
   displayName: string;
   email: string | null;
   phone: string | null;
+  preferredChannel: "email" | "sms";
   notes: string | null;
   status: "active" | "archived";
   createdAt: string;
@@ -42,6 +43,7 @@ export interface EventPlayer {
   eventId: string;
   playerId: string;
   displayName: string;
+  contact: { email: string | null; phone: string | null };
   invitationStatus: InvitationStatus;
   rsvpStatus: RsvpStatus;
   attended: boolean;

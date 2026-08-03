@@ -22,6 +22,7 @@ interface PlayerRow {
   display_name: string;
   email: string | null;
   phone: string | null;
+  preferred_channel: "email" | "sms";
   notes: string | null;
   status: "active" | "archived";
   created_at: string;
@@ -50,6 +51,8 @@ interface EventPlayerRow {
   event_id: string;
   player_id: string;
   display_name: string;
+  email: string | null;
+  phone: string | null;
   invitation_status: "invited" | "not_invited";
   rsvp_status: "pending" | "yes" | "maybe" | "no";
   attended: number;
@@ -73,6 +76,7 @@ function playerJson(row: PlayerRow) {
     displayName: row.display_name,
     email: row.email,
     phone: row.phone,
+    preferredChannel: row.preferred_channel,
     notes: row.notes,
     status: row.status,
     createdAt: row.created_at,
@@ -105,6 +109,7 @@ function eventPlayerJson(row: EventPlayerRow) {
     eventId: row.event_id,
     playerId: row.player_id,
     displayName: row.display_name,
+    contact: { email: row.email, phone: row.phone },
     invitationStatus: row.invitation_status,
     rsvpStatus: row.rsvp_status,
     attended: Boolean(row.attended),
@@ -255,8 +260,8 @@ async function createPlayer(request: Request, db: D1Database): Promise<Response>
   await db
     .prepare(
       `INSERT INTO players
-       (id, first_name, last_name, display_name, email, phone, notes, status, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, NULLIF(?5, ''), NULLIF(?6, ''), NULLIF(?7, ''), 'active', ?8, ?8)`,
+       (id, first_name, last_name, display_name, email, phone, preferred_channel, notes, status, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, NULLIF(?5, ''), NULLIF(?6, ''), ?7, NULLIF(?8, ''), 'active', ?9, ?9)`,
     )
     .bind(
       id,
@@ -265,6 +270,7 @@ async function createPlayer(request: Request, db: D1Database): Promise<Response>
       displayName,
       input.email ?? "",
       input.phone ?? "",
+      input.preferredChannel,
       input.notes ?? "",
       now,
     )
@@ -308,6 +314,7 @@ async function patchPlayer(request: Request, db: D1Database, id: string): Promis
       : current.display_name;
   const email = input.email !== undefined ? input.email : (current.email ?? "");
   const phone = input.phone !== undefined ? input.phone : (current.phone ?? "");
+  const preferredChannel = input.preferredChannel ?? current.preferred_channel;
   const notes = input.notes !== undefined ? input.notes : (current.notes ?? "");
   const status = input.status ?? current.status;
   const now = new Date().toISOString();
@@ -316,11 +323,11 @@ async function patchPlayer(request: Request, db: D1Database, id: string): Promis
     .prepare(
       `UPDATE players
        SET first_name = ?1, last_name = ?2, display_name = ?3,
-           email = NULLIF(?4, ''), phone = NULLIF(?5, ''), notes = NULLIF(?6, ''),
-           status = ?7, updated_at = ?8
-       WHERE id = ?9`,
+           email = NULLIF(?4, ''), phone = NULLIF(?5, ''), preferred_channel = ?6,
+           notes = NULLIF(?7, ''), status = ?8, updated_at = ?9
+       WHERE id = ?10`,
     )
-    .bind(firstName, lastName, displayName, email, phone, notes, status, now, id)
+    .bind(firstName, lastName, displayName, email, phone, preferredChannel, notes, status, now, id)
     .run();
 
   const row = await db.prepare("SELECT * FROM players WHERE id = ?1").bind(id).first<PlayerRow>();
@@ -383,7 +390,7 @@ async function eventDetail(db: D1Database, id: string): Promise<Response> {
     getEvent(db, id),
     db
       .prepare(
-        `SELECT ep.*, p.display_name
+        `SELECT ep.*, p.display_name, p.email, p.phone
          FROM event_players ep
          JOIN players p ON p.id = ep.player_id
          WHERE ep.event_id = ?1
@@ -540,7 +547,7 @@ async function patchEventPlayer(
   const correction = requireCorrectionNote(event, input.correctionNote);
   const current = await db
     .prepare(
-      `SELECT ep.*, p.display_name
+      `SELECT ep.*, p.display_name, p.email, p.phone
        FROM event_players ep
        JOIN players p ON p.id = ep.player_id
        WHERE ep.event_id = ?1 AND ep.player_id = ?2`,
@@ -626,7 +633,7 @@ async function removeEventPlayer(
   const correction = requireCorrectionNote(event, input.correctionNote);
   const current = await db
     .prepare(
-      `SELECT ep.*, p.display_name
+      `SELECT ep.*, p.display_name, p.email, p.phone
        FROM event_players ep
        JOIN players p ON p.id = ep.player_id
        WHERE ep.event_id = ?1 AND ep.player_id = ?2`,

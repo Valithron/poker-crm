@@ -16,6 +16,9 @@ const requiredTables = [
   "ledger_entries",
   "app_settings",
   "event_invites",
+  "invite_deliveries",
+  "delivery_batches",
+  "invite_delivery_results",
   "d1_migrations",
 ];
 
@@ -39,9 +42,14 @@ export const onRequestGet: AppPagesFunction = async (context) => {
       ? await context.env.DB.prepare("PRAGMA table_info(events)").all<NameRow>()
       : { results: [] as NameRow[] };
     const eventColumns = new Set(eventColumnsResult.results.map((row) => row.name));
+    const playersColumnsResult = tables.has("players")
+      ? await context.env.DB.prepare("PRAGMA table_info(players)").all<NameRow>()
+      : { results: [] as NameRow[] };
+    const playersColumns = new Set(playersColumnsResult.results.map((row) => row.name));
     const missingColumns = [
       eventColumns.has("capacity") ? "" : "events.capacity",
       eventColumns.has("rsvp_location_visibility") ? "" : "events.rsvp_location_visibility",
+      playersColumns.has("preferred_channel") ? "" : "players.preferred_channel",
     ].filter(Boolean);
 
     const migrationRow = tables.has("d1_migrations")

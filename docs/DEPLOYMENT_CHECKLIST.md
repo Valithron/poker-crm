@@ -34,6 +34,8 @@ npm run db:migrate:remote
    - roster and attendance
    - invite and RSVP view
    - private RSVP link generation and revocation
+   - one-recipient email delivery using the live Resend provider secret
+   - delivery batch history and failed-delivery retry
    - public RSVP response from a browser without organizer access
    - money ledger
    - closeout
