@@ -1,5 +1,6 @@
 import { ZodError } from "zod";
 import {
+  buildCalendarFile,
   hashRsvpToken,
   isPlausibleRsvpToken,
   publicRsvpResponseSchema,
@@ -59,7 +60,7 @@ function isExpired(invite: PublicInviteRow): boolean {
   return new Date(invite.expires_at).getTime() <= Date.now();
 }
 
-function publicJson(invite: PublicInviteRow) {
+function publicJson(invite: PublicInviteRow, token: string) {
   const expired = isExpired(invite);
   const revoked = Boolean(invite.revoked_at);
   const eventAllowsResponse = invite.event_status === "open" || invite.event_status === "active";
@@ -96,6 +97,13 @@ function publicJson(invite: PublicInviteRow) {
     expiresAt: invite.expires_at,
     lastResponseAt: invite.last_response_at,
     stateMessage,
+    links: {
+      calendar: `/rsvp-api/${encodeURIComponent(token)}/calendar.ics`,
+      directions:
+        locationVisible && invite.location
+          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(invite.location)}`
+          : null,
+    },
   };
 }
 
@@ -106,7 +114,7 @@ function invalidInvite(): Response {
 async function getPublicInvite(db: D1Database, token: string): Promise<Response> {
   const invite = await findInvite(db, token);
   if (!invite || invite.revoked_at || isExpired(invite)) return invalidInvite();
-  return json(publicJson(invite));
+  return json(publicJson(invite, token));
 }
 
 async function respond(request: Request, db: D1Database, token: string): Promise<Response> {
@@ -166,7 +174,42 @@ async function respond(request: Request, db: D1Database, token: string): Promise
 
   const updated = await findInvite(db, token);
   if (!updated) return invalidInvite();
-  return json(publicJson(updated));
+  return json(publicJson(updated, token));
+}
+
+async function calendar(
+  request: Request,
+  db: D1Database,
+  token: string,
+): Promise<Response> {
+  const invite = await findInvite(db, token);
+  if (!invite || invite.revoked_at || isExpired(invite)) return invalidInvite();
+  const locationVisible = invite.rsvp_location_visibility === "always" || invite.rsvp_status === "yes";
+  const rsvpUrl = new URL(`/rsvp/${token}`, request.url).toString();
+  const description = [
+    invite.host_name ? `Host: ${invite.host_name}` : "",
+    invite.game_notes ? `Game: ${invite.game_notes}` : "",
+    invite.stakes_notes ? `Stakes: ${invite.stakes_notes}` : "",
+    `RSVP: ${rsvpUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const body = buildCalendarFile({
+    uid: `${invite.invite_id}@poker.skpfam.com`,
+    title: invite.title,
+    startsAt: invite.starts_at,
+    location: locationVisible ? invite.location : null,
+    description,
+    url: rsvpUrl,
+    cancelled: invite.event_status === "cancelled",
+  });
+  return new Response(body, {
+    headers: {
+      "content-type": "text/calendar; charset=utf-8",
+      "content-disposition": `attachment; filename="brotm-poker-${invite.event_id}.ics"`,
+      "cache-control": "no-store",
+    },
+  });
 }
 
 export const onRequest: AppPagesFunction = async (context) => {
@@ -177,7 +220,9 @@ export const onRequest: AppPagesFunction = async (context) => {
   const token = parts[0];
 
   try {
-    if (!token || parts.length !== 1) return invalidInvite();
+    if (!token || parts.length < 1 || parts.length > 2) return invalidInvite();
+    if (method === "GET" && parts[1] === "calendar.ics") return calendar(request, context.env.DB, token);
+    if (parts.length !== 1) return invalidInvite();
     if (method === "GET") return getPublicInvite(context.env.DB, token);
     if (method === "POST") return respond(request, context.env.DB, token);
     return apiError(405, "METHOD_NOT_ALLOWED", "This RSVP action is not supported.");

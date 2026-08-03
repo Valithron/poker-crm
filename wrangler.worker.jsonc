@@ -1,0 +1,21 @@
+{
+  "name": "brotm-poker-reminders",
+  "main": "worker.ts",
+  "compatibility_date": "2026-07-21",
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "vars": {
+    "ENVIRONMENT": "development",
+    "DELIVERY_MODE": "log",
+    "PUBLIC_APP_ORIGIN": "http://localhost:8788"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "brotm-poker",
+      "database_id": "local-brotm-poker",
+      "migrations_dir": "./migrations"
+    }
+  ]
+}

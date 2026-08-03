@@ -79,7 +79,7 @@ Use an incognito window that is not logged into Cloudflare Access.
 
 For local and preview testing, set `DELIVERY_MODE=log` and `AUTH_MODE=public`. The organizer identity is resolved from `DEV_ORGANIZER_EMAIL`, so no Access login is required.
 
-For the email-first release, set `DELIVERY_MODE=live`, configure `RESEND_API_KEY` and `EMAIL_FROM` as Pages secrets, open an event, choose **Invite roster by email**, review the recipient summary, and confirm the send. SMS and scheduled reminders remain follow-on work; their shared provider and batch contracts are retained for the next delivery milestone.
+For live email delivery, set `DELIVERY_MODE=live`, configure `RESEND_API_KEY`, `EMAIL_FROM`, and `RSVP_TOKEN_ENCRYPTION_KEY` as Pages secrets, open an event, choose **Invite roster by email**, review the recipient summary, and confirm the send. The event setup page can opt into automated 24-hour reminders for pending RSVPs and update emails when details change. The separate Worker must be deployed for those automated messages.
 
 ## Security properties
 

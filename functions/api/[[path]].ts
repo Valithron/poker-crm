@@ -13,6 +13,7 @@ import {
   type EventStatus,
 } from "../../shared/domain";
 import { apiError, json, readJson, validationError } from "../lib/http";
+import { queueEventUpdateNotifications } from "../lib/automation";
 import type { AppPagesFunction, OrganizerIdentity } from "../lib/types";
 
 interface PlayerRow {
@@ -38,6 +39,7 @@ interface EventRow {
   location: string;
   game_notes: string | null;
   notes: string | null;
+  invite_automation_enabled: number;
   status: EventStatus;
   created_at: string;
   updated_at: string;
@@ -94,6 +96,7 @@ function eventJson(row: EventRow) {
     location: row.location,
     gameNotes: row.game_notes,
     notes: row.notes,
+    inviteAutomationEnabled: Boolean(row.invite_automation_enabled),
     status: row.status,
     attendanceCount: Number(row.attendance_count ?? 0),
     playerCount: Number(row.player_count ?? 0),
@@ -458,6 +461,14 @@ async function patchEvent(
     setField("gameNotes", "game_notes", current.game_notes, input.gameNotes || null);
   }
   if (input.notes !== undefined) setField("notes", "notes", current.notes, input.notes || null);
+  if (input.inviteAutomationEnabled !== undefined) {
+    setField(
+      "inviteAutomationEnabled",
+      "invite_automation_enabled",
+      Boolean(current.invite_automation_enabled),
+      input.inviteAutomationEnabled ? 1 : 0,
+    );
+  }
   if (input.status !== undefined) setField("status", "status", current.status, input.status);
 
   const now = new Date().toISOString();
@@ -484,6 +495,18 @@ async function patchEvent(
   }
 
   const event = await getEvent(db, id);
+  if (!correction && Object.keys(changesBetween(before, after)).some((field) =>
+    ["title", "startsAt", "hostPlayerId", "location", "gameNotes", "notes"].includes(field),
+  )) {
+    await queueEventUpdateNotifications(
+      db,
+      id,
+      Object.keys(changesBetween(before, after)).filter((field) =>
+        ["title", "startsAt", "hostPlayerId", "location", "gameNotes", "notes"].includes(field),
+      ),
+      new Date().toISOString(),
+    );
+  }
   return json({ event: eventJson(event as EventRow) });
 }
 

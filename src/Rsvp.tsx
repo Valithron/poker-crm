@@ -23,6 +23,7 @@ interface PublicRsvpDetail {
   expiresAt: string;
   lastResponseAt: string | null;
   stateMessage: string;
+  links: { calendar: string; directions: string | null };
 }
 
 interface AdminInviteState {
@@ -66,6 +67,7 @@ interface AdminRsvpDetail {
     stakesNotes: string | null;
     status: "draft" | "open" | "active" | "completed" | "cancelled" | "archived";
     locationVisibility: RsvpLocationVisibility;
+    inviteAutomationEnabled: boolean;
   };
   players: AdminRsvpPlayer[];
 }
@@ -100,6 +102,7 @@ interface AdminDeliveryBatch {
   id: string;
   policy: "requested_channels" | "preferred_with_fallback";
   source: "manual" | "scheduled";
+  notificationType: "invite" | "reminder" | "event_update";
   status: "sending" | "completed" | "partial" | "failed";
   summary: { requested: number; sent: number; failed: number; skipped: number };
   createdAt: string;
@@ -107,6 +110,8 @@ interface AdminDeliveryBatch {
 }
 
 interface SendInvitesResponse {
+  queued?: boolean;
+  notificationType?: "reminder" | "event_update";
   batchId: string;
   summary: { requested: number; sent: number; failed: number; skipped: number };
   results: Array<{
@@ -238,6 +243,9 @@ export function PublicRsvpPage() {
         <div className="public-rsvp-brand"><BrandMark /><strong>BroTM Poker</strong></div>
         <p className="eyebrow">Private invitation for {detail.player.displayName}</p>
         <h1>{detail.event.title}</h1>
+        <p className="public-rsvp-lede">
+          Let the host know if you’re coming. You can change your answer from this link before responses close.
+        </p>
         <div className="public-rsvp-details">
           <div><span>When</span><strong>{formatDate(detail.event.startsAt)}</strong></div>
           {detail.event.hostName ? <div><span>Host</span><strong>{detail.event.hostName}</strong></div> : null}
@@ -272,6 +280,21 @@ export function PublicRsvpPage() {
             />
           ))}
         </div>
+        <div className="public-rsvp-actions" aria-label="Event actions">
+          <a className="button button-primary" href={detail.links.calendar} download>
+            Add to calendar
+          </a>
+          {detail.links.directions ? (
+            <a className="button button-secondary" href={detail.links.directions} target="_blank" rel="noreferrer">
+              Get directions
+            </a>
+          ) : null}
+        </div>
+        {detail.rsvpStatus === "yes" && detail.event.locationHiddenUntilYes && detail.event.location ? (
+          <p className="public-rsvp-location-revealed" role="status">
+            The address is now visible above because you RSVP’d yes.
+          </p>
+        ) : null}
         <p className="public-rsvp-footnote">
           This private link expires after the poker night. Do not forward it to another person.
         </p>
@@ -473,7 +496,9 @@ export function RsvpAdminPage() {
         method: "POST",
         body: JSON.stringify({}),
       });
-      setMessage(`Retry processed: ${response.summary.sent} sent, ${response.summary.failed} failed, ${response.summary.skipped} skipped.`);
+      setMessage(response.queued
+        ? "Automated message queued for the next reminder Worker run."
+        : `Retry processed: ${response.summary.sent} sent, ${response.summary.failed} failed, ${response.summary.skipped} skipped.`);
       await load();
     } catch (caught) {
       setError(caught);
@@ -580,6 +605,15 @@ export function RsvpAdminPage() {
         </select>
       </section>
 
+      <section className="panel rsvp-privacy-panel">
+        <div>
+          <p className="eyebrow">Invitee follow-up</p>
+          <h2>{detail.event.inviteAutomationEnabled ? "Automatic emails are on" : "Automatic emails are off"}</h2>
+          <p>When enabled on the event setup page, pending players receive one email reminder 24 hours before the poker night and invited players receive updates when details change.</p>
+        </div>
+        <Link className="button button-secondary" to={`/events/${id}`}>Manage on event setup</Link>
+      </section>
+
       {locked ? (
         <div className="state-card">This event is locked. Recorded responses remain visible, but links cannot be generated, regenerated, or revoked.</div>
       ) : null}
@@ -665,7 +699,7 @@ export function RsvpAdminPage() {
             {batches.map((batch) => (
               <article className="rsvp-delivery-row" key={batch.id}>
                 <div>
-                  <strong>{batch.source === "scheduled" ? "Scheduled reminder" : "Organizer send"}</strong>
+                  <strong>{batch.notificationType === "event_update" ? "Event update" : batch.notificationType === "reminder" ? "24-hour reminder" : "Organizer invitation"}</strong>
                   <span>{batch.policy === "preferred_with_fallback" ? "Preferred channel with fallback" : "Requested channels"}</span>
                 </div>
                 <div>

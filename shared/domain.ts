@@ -62,6 +62,7 @@ export const eventPatchSchema = z
     location: z.string().trim().max(240).optional(),
     gameNotes: z.string().trim().max(1200).nullable().optional(),
     notes: z.string().trim().max(1200).nullable().optional(),
+    inviteAutomationEnabled: z.boolean().optional(),
     status: z.enum(eventStatuses).optional(),
     correctionNote,
   })

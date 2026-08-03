@@ -24,6 +24,8 @@ export interface PersonalizedInviteInput {
   gameNotes: string | null;
   stakesNotes: string | null;
   rsvpUrl: string;
+  calendarUrl?: string;
+  directionsUrl?: string | null;
 }
 
 export function invitationExpiresAt(startsAt: string): string {
@@ -46,6 +48,8 @@ export function buildPersonalizedInviteText(input: PersonalizedInviteInput, loca
   if (input.gameNotes) lines.push(`Game: ${input.gameNotes}`);
   if (input.stakesNotes) lines.push(`Stakes: ${input.stakesNotes}`);
   lines.push(`RSVP yes, maybe, or no: ${input.rsvpUrl}`);
+  if (input.calendarUrl) lines.push(`Add to calendar: ${input.calendarUrl}`);
+  if (input.directionsUrl) lines.push(`Get directions: ${input.directionsUrl}`);
   return lines.join("\n");
 }
 
@@ -73,8 +77,85 @@ export function buildPersonalizedInviteEmail(
   const lines = text.split("\n");
   const escapedLines = lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("");
   const subject = `BroTM Poker: ${input.title} — RSVP`;
-  const html = `${escapedLines}<p><a href="${escapeHtml(input.rsvpUrl)}">RSVP yes, maybe, or no</a></p>`;
+  const html = [
+    escapedLines,
+    `<p><a href="${escapeHtml(input.rsvpUrl)}">RSVP yes, maybe, or no</a></p>`,
+    input.calendarUrl ? `<p><a href="${escapeHtml(input.calendarUrl)}">Add to calendar</a></p>` : "",
+    input.directionsUrl ? `<p><a href="${escapeHtml(input.directionsUrl)}">Get directions</a></p>` : "",
+  ].join("");
   return { subject, text, html };
+}
+
+export function buildPersonalizedReminderEmail(
+  input: PersonalizedInviteInput,
+  locale = "en-US",
+): { subject: string; text: string; html: string } {
+  const invite = buildPersonalizedInviteEmail(input, locale);
+  return {
+    subject: `Reminder: ${invite.subject}`,
+    text: `Friendly reminder: please let the host know if you can make it.\n\n${invite.text}`,
+    html: `<p>Friendly reminder: please let the host know if you can make it.</p>${invite.html}`,
+  };
+}
+
+export function buildPersonalizedUpdateEmail(
+  input: PersonalizedInviteInput,
+  changedFields: string[],
+  locale = "en-US",
+): { subject: string; text: string; html: string } {
+  const invite = buildPersonalizedInviteEmail(input, locale);
+  const changes = changedFields.length
+    ? `Updated details: ${changedFields.join(", ")}.`
+    : "The poker night details were updated.";
+  return {
+    subject: `Update: ${input.title}`,
+    text: `${changes}\n\n${invite.text}`,
+    html: `<p>${escapeHtml(changes)}</p>${invite.html}`,
+  };
+}
+
+function escapeIcs(value: string): string {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll(";", "\\;")
+    .replaceAll(",", "\\,")
+    .replaceAll(/\r?\n/gu, "\\n");
+}
+
+function icsDate(value: string): string {
+  return new Date(value).toISOString().replaceAll(/[-:]/gu, "").replace(/\.\d{3}Z$/u, "Z");
+}
+
+export function buildCalendarFile(input: {
+  uid: string;
+  title: string;
+  startsAt: string;
+  location?: string | null;
+  description?: string | null;
+  url: string;
+  cancelled?: boolean;
+}): string {
+  const startsAt = new Date(input.startsAt);
+  const endsAt = new Date(startsAt.getTime() + 4 * 60 * 60 * 1000);
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//BroTM Poker//RSVP//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${escapeIcs(input.uid)}`,
+    `DTSTAMP:${icsDate(new Date().toISOString())}`,
+    `DTSTART:${icsDate(startsAt.toISOString())}`,
+    `DTEND:${icsDate(endsAt.toISOString())}`,
+    `SUMMARY:${escapeIcs(input.title)}`,
+    `URL:${escapeIcs(input.url)}`,
+    `STATUS:${input.cancelled ? "CANCELLED" : "CONFIRMED"}`,
+  ];
+  if (input.location) lines.push(`LOCATION:${escapeIcs(input.location)}`);
+  if (input.description) lines.push(`DESCRIPTION:${escapeIcs(input.description)}`);
+  lines.push("END:VEVENT", "END:VCALENDAR");
+  return `${lines.join("\r\n")}\r\n`;
 }
 
 export function buildPersonalizedInviteSms(input: PersonalizedInviteInput, locale = "en-US"): string {
