@@ -11,7 +11,7 @@
     "ENVIRONMENT": "production",
     "DELIVERY_MODE": "live",
     "PUBLIC_APP_ORIGIN": "https://poker.brotime719.com",
-    "EMAIL_FROM": "BroTM Poker <poker@brotime719.com>"
+    "EMAIL_FROM": "BroTime Poker Night <poker@brotime719.com>"
   },
 
   "d1_databases": [
