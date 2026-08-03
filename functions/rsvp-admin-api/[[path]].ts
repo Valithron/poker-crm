@@ -473,6 +473,7 @@ function deliveryMessage(
   destination: string,
   url: string,
   deliveryId: string,
+  origin: string,
 ) {
   const input = {
     playerName: player.display_name,
@@ -484,6 +485,7 @@ function deliveryMessage(
     gameNotes: event.game_notes,
     stakesNotes: event.stakes_notes,
     rsvpUrl: url,
+    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon.png`,
     calendarUrl: `${origin.replace(/\/+$/u, "")}/rsvp-api/${encodeURIComponent(url.split("/rsvp/").pop() ?? "")}/calendar.ics`,
     directionsUrl: event.location
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`
@@ -497,6 +499,7 @@ function deliveryMessage(
       subject: email.subject,
       text: email.text,
       html: email.html,
+      headers: email.headers,
       idempotencyKey: deliveryId,
     };
   }
@@ -1000,7 +1003,7 @@ async function sendInvites(
         deliveryId,
         resultId,
         resultIndex: results.length - 1,
-        message: deliveryMessage(event, player, channel, destinationValue, prepared.generated.url, deliveryId),
+        message: deliveryMessage(event, player, channel, destinationValue, prepared.generated.url, deliveryId, origin),
         player,
         provider,
       });

@@ -53,4 +53,5 @@ The Production environment needs one D1 binding named `DB`, pointing to `brotm-p
 - [`docs/FIRST_SLICE_WORK_ORDER.md`](docs/FIRST_SLICE_WORK_ORDER.md): implementation scope and acceptance criteria
 - [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md): durable product and architecture decisions
 - [`docs/MOBILE_FIRST_ROADMAP.md`](docs/MOBILE_FIRST_ROADMAP.md): phone-first features, automation, and follow-on work
+- [`docs/EMAIL_TEMPLATE.md`](docs/EMAIL_TEMPLATE.md): branded invitation email implementation and standalone preview
 - [`wrangler.worker.jsonc`](wrangler.worker.jsonc): reminder Worker and Cron Trigger configuration

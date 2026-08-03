@@ -45,6 +45,7 @@ async function sendEmail(env: Env, message: DeliveryMessage): Promise<ProviderDe
       subject: message.subject,
       text: message.text,
       html: message.html,
+      ...(message.headers ? { headers: message.headers } : {}),
     }),
   });
 
