@@ -17,7 +17,7 @@ const invite = {
   gameNotes: "Dealer's choice",
   stakesNotes: "$10 buy-in",
   rsvpUrl: "https://poker.skpfam.com/rsvp/example-token",
-  brandAssetUrl: "https://poker.skpfam.com/apple-touch-icon.png",
+  brandAssetUrl: "https://poker.skpfam.com/apple-touch-icon-v3.png",
 };
 
 describe("invite delivery contracts", () => {

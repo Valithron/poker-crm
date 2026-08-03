@@ -485,7 +485,7 @@ function deliveryMessage(
     gameNotes: event.game_notes,
     stakesNotes: event.stakes_notes,
     rsvpUrl: url,
-    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon.png`,
+    brandAssetUrl: `${origin.replace(/\/+$/u, "")}/apple-touch-icon-v3.png`,
     calendarUrl: `${origin.replace(/\/+$/u, "")}/rsvp-api/${encodeURIComponent(url.split("/rsvp/").pop() ?? "")}/calendar.ics`,
     directionsUrl: event.location
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`
